@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/ejecutable.dir/miPrimerCgal.cxx.o -o ejecutable  /usr/lib/libgmpxx.so /usr/lib/libmpfr.so /usr/lib/libgmp.so 

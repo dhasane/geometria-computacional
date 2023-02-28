@@ -1,0 +1,3 @@
+/home/daniel/dev/geometria_computacional/ejemplo/build/CMakeFiles/ejecutable.dir
+/home/daniel/dev/geometria_computacional/ejemplo/build/CMakeFiles/edit_cache.dir
+/home/daniel/dev/geometria_computacional/ejemplo/build/CMakeFiles/rebuild_cache.dir
