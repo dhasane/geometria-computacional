@@ -29,6 +29,30 @@ double area_green(std::vector<TPoint2> iterable)
     return area;
 }
 
+double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end)
+{
+    double area = 0;
+    for(std::vector<TPoint2>::iterator i=start ; i != end - 1 ; i++)
+    {
+        double x = i->x();
+        double y = i->y();
+
+        double xd = (i + 1)->x();
+        double yd = (i + 1)->y();
+
+		std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
+
+        area += ( ( x * yd ) - ( y * xd ) ) / 2;
+    }
+
+	std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
+	std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
+
+	area += ( ( (end-1)->x() * start->y() ) - ( (end-1)->y() * start->x() ) ) / 2;
+
+    return area;
+}
+
 // template <typename T>
 // std::vector<T> order(std::vector<T> vect)
 // {
@@ -93,31 +117,20 @@ double area_green(std::vector<TPoint2> iterable)
 //     return mispuntos;
 // }
 
-std::vector<TLine2> casco_convexo_inc(std::vector<TPoint2> iterable)
-{
-    std::vector<TPoint2> mispuntos;
-
-
-
-
-
-    return mispuntos;
-}
-
 int main(int argc, char** argv)
 {
     std::vector<TPoint2> mispuntos;
 
-    int n = std::atoi(argv[1]);
-    // int lx0 = std::atoi(argv[2]);
-    // int lx1 = std::atoi(argv[3]);
-    // int ly0 = std::atoi(argv[4]);
-    // int ly1 = std::atoi(argv[5]);
-
-    std::random_device r;
-
-    std::default_random_engine gen(r());
-    std::uniform_real_distribution<TKernel::FT> dis(-1, 1);
+    // int n = std::atoi(argv[1]);
+    // // int lx0 = std::atoi(argv[2]);
+    // // int lx1 = std::atoi(argv[3]);
+    // // int ly0 = std::atoi(argv[4]);
+    // // int ly1 = std::atoi(argv[5]);
+	//
+    // std::random_device r;
+	//
+    // std::default_random_engine gen(r());
+    // std::uniform_real_distribution<TKernel::FT> dis(-1, 1);
 
     // TLine2 line( TPoint2(lx0, ly0), TPoint2(lx1, ly1) );
 
@@ -134,12 +147,19 @@ int main(int argc, char** argv)
     // mispuntos.push_back( TPoint2(dis(gen),dis(gen)) );
     // }
 
+	std::cout << "ini" << std::endl;
+
     mispuntos.push_back(TPoint2(0,0));
     mispuntos.push_back(TPoint2(50,0));
     mispuntos.push_back(TPoint2(50,50));
     mispuntos.push_back(TPoint2(0,50));
 
+
+	std::cout << "viejo" << std::endl;
     std::cout << area_green(mispuntos) << std::endl;
+
+	std::cout << "nuevo" << std::endl;
+    std::cout << area_green(mispuntos.begin(), mispuntos.end()) << std::endl;
 
     // for (const auto & p: mispuntos)
     // {
