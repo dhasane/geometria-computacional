@@ -40,13 +40,13 @@ double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::it
         double xd = (i + 1)->x();
         double yd = (i + 1)->y();
 
-		std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
+		// std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
 
         area += ( ( x * yd ) - ( y * xd ) ) / 2;
     }
 
-	std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
-	std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
+	// std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
+	// std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
 
 	area += ( ( (end-1)->x() * start->y() ) - ( (end-1)->y() * start->x() ) ) / 2;
 
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     mispuntos.push_back(TPoint2(0,0));
     mispuntos.push_back(TPoint2(50,0));
     mispuntos.push_back(TPoint2(50,50));
-    mispuntos.push_back(TPoint2(0,50));
+    // mispuntos.push_back(TPoint2(0,50));
 
 
 	std::cout << "viejo" << std::endl;
