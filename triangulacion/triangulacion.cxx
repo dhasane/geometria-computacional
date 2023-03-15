@@ -17,20 +17,6 @@ using _T = CGAL::Partition_traits_2< _K, _M >;
 using TPoint2 = _K::Point_2;
 using TLine2 = _K::Line_2;
 
-
-// debe haber una mejor forma de organizar esto
-template <typename T>
-struct V3 {
-    T v1;
-    T v2;
-    T v3;
-};
-
-// int calidad_triangulo(TPoint2 p1, TPoint2 p2, TPoint2 p3)
-// {
-//
-// }
-
 bool right_segment(TPoint2 origin, TPoint2 punto)
 {
     return origin.x() < punto.x();
@@ -46,7 +32,6 @@ struct Par
     int posicionIni;
     int posicionFin;
 };
-
 
 void triangulacion_greedy(std::deque<int> d)
 {
@@ -85,24 +70,25 @@ void triangulacion_greedy(std::deque<int> d)
 }
 
 //template <typename T>
-double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end)
+double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end, bool dir)
 {
+    int move = dir ? 1 : -1;
     double area = 0;
-    for(std::vector<TPoint2>::iterator i=start ; i != end - 1 ; i++)
+    for(std::vector<TPoint2>::iterator i=start ; i != std::next(end, - move) ; i = std::next(i, move))
     {
         double x = i->x();
         double y = i->y();
 
-        double xd = std::next(i)->x();
-        double yd = std::next(i)->y();
+        double xd = std::next(i, move)->x();
+        double yd = std::next(i, move)->y();
 
-		std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
+		// std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
 
         area += ( ( x * yd ) - ( y * xd ) ) / 2;
     }
 
-	std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
-	std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
+	// std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
+	// std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
 
 	area += ( ( (end-1)->x() * start->y() ) - ( (end-1)->y() * start->x() ) ) / 2;
 
@@ -131,50 +117,53 @@ void triangulacion(std::vector<TPoint2> P, std::deque<Par> &D)
     {
         TPoint2 Uj = P[i];
         bool right = right_segment(origin, Uj);
-        bool prev_right = S.front().right;
 
-        PointOrder last;
-
+        PointOrder *last;
         PointOrder current{i, right};
 
-
-        if (right != prev_right) // lado contrario
+        if (right != S.front().right) // lado contrario
         {
-		std::cout << "bla dif" << std::endl;
-
-			while( 0 <= S.size())
+			while( !S.empty() )
 			{
 				D.push_back({i, S.front().posicion});
-				last = S.front();
+				last = &S.front();
 				S.pop_front();
 			}
-			S.push_front(last);
+            if (last != NULL)
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
 			S.push_front(current);
         }
         else // mismo lado
         {
-		std::cout << "bla same" << std::endl;
-
-            // se puede usar greene para verificar si se sale
-            // positivo es interno, negativo es externo
-			while( 0 <= S.size())
+            double area;
+            do
 			{
-				std::vector<TPoint2>::iterator ini = P.begin() + i;
-				std::vector<TPoint2>::iterator end = P.begin() + S.front().posicion;
-				std::cout << "bla in S" << std::endl;
+                int de = i;
+                int hasta = S.front().posicion;
 
-				double area = area_green(ini, end); //, i - S.front().posicion) ;
+				std::vector<TPoint2>::iterator ini = P.begin() + de;
+				std::vector<TPoint2>::iterator end = P.begin() + hasta;
 
-				std::cout << "area: " << area << std::endl;
+                area = area_green(ini, end, de < hasta );
 
-				if ( 0 <= area )
+                // se puede usar greene para verificar si se sale
+                // positivo es interno, negativo es externo
+				if ( 0 < area )
 				{
 					D.push_back({i, S.front().posicion});
-					last = S.front();
-					S.pop_front();
+                    last = &S.front();
+                    S.pop_front();
 				}
-			}
-			S.push_front(last);
+			} while( !S.empty() && 0 < area );
+
+            if (last != NULL)
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
         }
     }
 }
@@ -185,9 +174,8 @@ int next(int act, int inc, int max)
     return ch < 0 ? max - 1 : ch;
 }
 
-void triangulacion_rot(std::vector<TPoint2> P)
+void triangulacion_rot(std::vector<TPoint2> P, std::deque<Par> &D)
 {
-    std::deque<Par> D;
     std::deque<PointOrder> S;
 
 	// primero es menor que el segundo
@@ -199,84 +187,89 @@ void triangulacion_rot(std::vector<TPoint2> P)
 			return a.y() < b.y();
         };
 
-    // ordenamiento
-
-    int p_ant;
-    int p_act = -1 ;
-    int p_nxt;
-
-    int inc = -1;
-    if (comp(P[0], P[1]))
+    int top = 0 ;
+    for (int i = 1 ; i < P.size() ; i++)
     {
-        inc = 1;
+        if (comp(P[top], P[i]))
+        {
+            top = i;
+        }
     }
 
-    do
-    {
-        p_ant = next(p_act, -inc, P.size());
-        p_act = next(p_act, inc, P.size());
-        p_nxt = next(p_act, inc, P.size());
+	int it_izq = next(top, -1, P.size());
+	int it_der = next(top, 1, P.size());
 
-		std::cout << p_ant << ' ' << p_act << ' ' << p_nxt << std::endl;
+    S.push_front({top, false});
 
-		// mientras el anterior no sea menor que el actual y el siguiente no sea menor que el actual
-    } while ( !(comp(P[p_ant], P[p_act]) && comp(P[p_nxt], P[p_act])));
-
-    // final ordenamiento
-
-    std::cout << "[[ " << p_act << std::endl;
-
-	int it_izq = p_ant;
-	int it_der = p_nxt;
-
-	bool prev_right;
-	bool prim = true;
+    // std::cout << it_izq << " " << top << " " << it_der << std::endl;
 
 	while (it_izq != it_der)
 	{
-		int i;
-		if (comp(P[it_izq], P[it_der]))
+		int *i;
+
+		bool right = comp(P[it_izq], P[it_der]);
+		if (right)
 		{
-			i = it_der;
+			i = &it_der;
 		}
 		else
 		{
-			i = it_izq;
+			i = &it_izq;
 		}
-		bool right = right_segment(P[p_act], P[i]);
 
-        if (right != prev_right) // lado contrario
+        PointOrder *last = NULL;
+        PointOrder current{*i, right};
+
+        if (right != S.front().right) // lado contrario
         {
-			while( 0 <= S.size())
+			while( !S.empty() )
 			{
-				D.push_back({i, S.front().posicion});
-				last = S.front();
+				D.push_back({*i, S.front().posicion});
+				last = &S.front();
 				S.pop_front();
 			}
-			S.push_front(last);
+            if (last != NULL)
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
 			S.push_front(current);
         }
         else // mismo lado
         {
-            // se puede usar greene para verificar si se sale
-            // positivo es interno, negativo es externo
-			while( 0 <= S.size())
-			{
-				std::vector<TPoint2>::iterator ini = P.begin() + i;
-				std::vector<TPoint2>::iterator end = P.begin() + S.front().posicion;
-				double area = area_green(ini, end); //, i - S.front().posicion) ;
+            double area = 0;
 
-				if ( 0 <= area )
-				{
-					D.push_back({i, S.front().posicion});
-					last = S.front();
-					S.pop_front();
-				}
-			}
-			S.push_front(last);
+            while( !S.empty() && 0 <= area )
+            {
+                int de = *i;
+                int hasta = S.front().posicion;
+                area = area_green(P.begin() + de, P.begin() + hasta, de < hasta );
+
+                // se puede usar greene para verificar si se sale
+                // positivo es interno, negativo es externo
+                if ( 0 <= area )
+                {
+                    D.push_back({*i, S.front().posicion});
+                    last = &S.front();
+                    S.pop_front();
+                }
+            }
+            if (last != NULL)
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
         }
-	}
 
+		if (right)
+		{
+            *i = next(*i, 1, P.size());
+		}
+		else
+		{
+            *i = next(*i, -1, P.size());
+		}
+	}
 }
 
 int main() {
@@ -329,39 +322,44 @@ int main() {
     std::cout << std::endl;
 
     std::cout << "# Lines" << std::endl;
+
+    std::cout << "# Border" << std::endl;
+
+    for( const auto& poly: partition )
+    {
+        auto container = poly.container( );
+        std::cout << "l";
+		for (int p: container)
+		{
+            std::cout << " " << p + 1;
+		}
+        std::cout << " " << *container.begin() + 1 ;
+        std::cout << std::endl;
+    }
+
+    std::cout << "# internal" << std::endl;
     for( const auto& poly: partition )
     {
         auto container = poly.container( );
 
-        // std::deque<int> d(container.begin(), container.end()-- );
-
-
+        // std::cout << "# ========== " << std::endl;
 		std::vector<TPoint2> d;
 
+        std::cout << "# ";
 		for (int p: container)
 		{
 			TPoint2 point = points[p];
-			d.push_back(point);
-		}
+            std::cout << '[' << point << ']' ;
+            d.push_back(point);
+        }
+        std::cout << std::endl;
 
-        std::deque<TPoint2> dd(d.begin(), d.end() );
-		triangulacion_rot(dd);
-
-		std::cout << "# ";
-		for (TPoint2 a: d)
-		{
-			std::cout << '[' << a << "] ";
-		}
-		std::cout << std::endl;
-
-
-		// triangulacion_rot(d);
 		std::deque<Par> out;
-		triangulacion(d, out);
+		triangulacion_rot(d, out);
 
 		for (auto a : out)
 		{
-			std::cout << a.posicionIni << ' ' << a.posicionFin << std::endl;
+			std::cout << "l " << a.posicionIni + 1  << ' ' << a.posicionFin + 1 << std::endl;
 		}
     }
 
