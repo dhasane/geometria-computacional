@@ -288,16 +288,16 @@ int main( int argc, char** argv )
         std::cout << "l";
         for (int p : container) {
             std::cout << " " << p + 1;
-                }
-                std::cout << " " << *container.begin() + 1;
-                std::cout << std::endl;
         }
+        std::cout << " " << *container.begin() + 1;
+        std::cout << std::endl;
+    }
 
-        std::cout << "# internal" << std::endl;
-        for (const auto &poly : partition) {
-                auto container = poly.container();
+    std::cout << "# internal" << std::endl;
+    for (const auto &poly : partition) {
+        auto container = poly.container();
 
-                // std::cout << "# ========== " << std::endl;
+        // std::cout << "# ========== " << std::endl;
 		std::vector<TPoint2> d;
 		std::vector<int> pos;
 
