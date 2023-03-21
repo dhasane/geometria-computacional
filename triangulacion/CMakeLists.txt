@@ -7,3 +7,5 @@ find_package(CGAL REQUIRED)
 add_executable(triangulacion triangulacion.cxx)
 
 target_link_libraries(triangulacion CGAL::CGAL)
+
+set(CMAKE_CXX_FLAGS_DEBUG "-g")

@@ -59,9 +59,11 @@ void triangulacion_greedy(std::deque<int> d)
 }
 
 //template <typename T>
-double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end, bool dir)
+// double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end, bool dir)
+double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end)
 {
-    int move = dir ? 1 : -1;
+    // int move = dir ? 1 : -1;
+    int move = 1;
     double area = 0;
     for(std::vector<TPoint2>::iterator i=start ; i != std::next(end, - move) ; i = std::next(i, move))
     {
@@ -73,15 +75,15 @@ double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::it
 
 		// std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
 
-        area += ( ( x * yd ) - ( y * xd ) ) / 2;
+        area += ( ( x * yd ) - ( y * xd ) );
     }
 
 	// std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
 	// std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
 
-	area += ( ( (end-1)->x() * start->y() ) - ( (end-1)->y() * start->x() ) ) / 2;
+	area += ( ( (end-move)->x() * start->y() ) - ( (end-move)->y() * start->x() ) );
 
-    return area;
+    return area / 2;
 }
 
 // evitar salirse
@@ -96,6 +98,7 @@ int positive_distance(int cur, int top, int max)
     return cur < top ? (max-top) + cur : cur-top;
 }
 
+// no funciona perfecto, pero de momento creo que es suficiente
 void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &D)
 {
     std::deque<std::pair<int, bool>> S;
@@ -104,7 +107,7 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
     auto comp = [](TPoint2 a, TPoint2 b)
         {
 			if (a.y() == b.y()) {
-				return a.x() > b.x();
+				return a.x() < b.x(); // TODO: revisar esto
 			}
 			return a.y() < b.y();
         };
@@ -123,7 +126,7 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 
     // std::cout << it_izq << " " << top << " " << it_der << std::endl;
 
-    S.push_front({top, false});
+    // S.push_front({top, false});
     bool right = comp(P[it_izq], P[it_der]);
     if (right)
     {
@@ -136,6 +139,8 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
         it_izq = next(it_izq, -1, P.size());
     }
 
+    // std::cout << to_string<std::pair<int, bool>>(S.begin(), S.end()) << std::endl;
+
 	// while (it_izq != it_der && it_izq != next(it_der, 1, P.size()))
     // TODO: encontrar como evitar el ultimo paso
 	while (it_izq != it_der)
@@ -143,6 +148,7 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 	{
 		int *i;
 
+        // std::cout << "[[[]]]" ; for (auto s: S) {std::cout << s.first << " ";} std::cout << std::endl;
 		bool right = comp(P[it_izq], P[it_der]);
 		if (right)
 		{
@@ -153,7 +159,6 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 			i = &it_izq;
 		}
 
-        // std::cout << std::endl;
         // std::cout << ">> " << it_izq << ":[" << P[it_izq] << "] " << it_der << ":[" << P[it_der] << "]" << std::endl;
         // std::cout << ">> " << "i:" << *i << "[" << P[*i] << "] S.top:" << S.front().first << ":[" << P[S.front().first] <<"]" << std::endl;
 
@@ -162,11 +167,13 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 
         if (right != S.front().second) // lado contrario
         {
-            // std::cout <<"contrario: "<< it_izq << ":[" << P[it_izq] << "] " << it_der << ":[" << P[it_der] << "]" << std::endl;
+            // std::cout << "contrario: " << std::endl;
+            last = &S.front();
 			while( !S.empty() )
 			{
+                // std::cout << "contrario: " << *i << " " << S.front().first << std::endl;
 				D.push_back({*i, S.front().first});
-				last = &S.front();
+				// last = &S.front();
 				S.pop_front();
 			}
             if (last != NULL)
@@ -178,27 +185,36 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
         }
         else // mismo lado
         {
-            // std::cout <<"mismo: "<< it_izq << ":[" << P[it_izq] << "] " << it_der << ":[" << P[it_der] << "]" << std::endl;
+            // std::cout << "mismo: " << std::endl;
             double area = 1;
 
-            while( !S.empty() && 0 < area )
+            last = &S.front();
+            while( !S.empty() )
             {
                 int de = *i;
                 int hasta = S.front().first;
-                area = area_green(P.begin() + de, P.begin() + hasta, de < hasta );
 
-                std::cout << "de " << de << " hasta " << hasta << " area: " << area << std::endl;
+                // std::cout << "de " << de << " hasta " << hasta << std::endl;
+                area = area_green(
+                    P.begin() + (de < hasta ? de : hasta), // esto se deberia organizar
+                    P.begin() + (de < hasta ? hasta : de));
+
+                // std::cout << area << std::endl;
 
                 // se puede usar greene para verificar si se sale
                 // positivo es interno, negativo es externo
                 if ( 0 < area )
                 {
+                    // std::cout << "mismo: " << *i << " " << S.front().first << std::endl;
                     D.push_back({*i, S.front().first});
-                    last = &S.front();
+                    // last = &S.front();
                     S.pop_front();
+                } else {
+                    // std::cout << "saliendo" << std::endl;
+                    break;
                 }
             }
-            if (last != NULL)
+            if (last != NULL && *last != S.front())
             {
                 S.push_front(*last);
                 last = NULL;
@@ -213,7 +229,9 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 		{
             *i = next(*i, -1, P.size());
 		}
+        // std::cout << "loop" << std::endl;
 	}
+    // std::cout << "final [[[]]]" ; for (auto s: S) {std::cout << s.first << " ";} std::cout << std::endl;
 }
 
 int main( int argc, char** argv )
@@ -250,11 +268,6 @@ int main( int argc, char** argv )
 
     _T traits(CGAL::make_property_map(points));
 
-    // for (int i = 0; i < points.size(); i++) {
-    //     polygon.push_back(i);
-    // }
-    std::cout << "==============" << std::endl;
-
     std::list<_T::Polygon_2> partition;
     CGAL::y_monotone_partition_2(polygon.vertices_begin(),
                                  polygon.vertices_end(),
@@ -289,10 +302,12 @@ int main( int argc, char** argv )
 		std::vector<int> pos;
 
         std::cout << "# ";
+        int i = 0;
 		for (int p: container)
 		{
 			TPoint2 point = points[p];
-            std::cout << "(" << p+1 << ":[" << point << "]) " ;
+            std::cout << "(" << i << ":" << p+1 << ":[" << point << "]) " ;
+            i++;
             d.push_back(point);
             pos.push_back(p);
         }
@@ -305,7 +320,7 @@ int main( int argc, char** argv )
 		{
 			std::cout << "l " << pos[a.first] + 1  << ' ' << pos[a.second] + 1 << std::endl;
 		}
-        }
+    }
 
     return 0;
 }
