@@ -216,51 +216,52 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 	}
 }
 
-int main() {
-    // std::vector<_K::Point_2 > points =
-    //     {
-    //         _K::Point_2( 0, 0 ), // 0
-    //         _K::Point_2( 2, 0 ), // 1
-    //         _K::Point_2( 2, 2 ), // 2
-    //         _K::Point_2( 1, 1 ), // 3
-    //         _K::Point_2( 0, 2 )  // 4
-    //     };
-    std::vector<_K::Point_2 > points =
-        {
-            _K::Point_2( 0, 1 ), // 0
-                // _K::Point_2( -1, 0 ), // 0
-            _K::Point_2( 2, 1 ), // 1
-            _K::Point_2( 2, 3 ), // 2
-            _K::Point_2( 1, 2 ), // 3
-            _K::Point_2( 0, 3 )  // 4
-            };
-    // std::vector<_K::Point_2 > points =
-    //     {
-    //     _K::Point_2( 1,1 ), // 1
-    //         _K::Point_2( 4,3 ), // 2
-    //         _K::Point_2( 5,5 ), // 3
-    //         _K::Point_2( 3,7 ), // 4
-    //         _K::Point_2( 3,9 ), // 5
-    //         _K::Point_2( 8,8 ), // 6
-    //         _K::Point_2( 9,4 ), // 7
-    //         _K::Point_2( 6,1 ) // 8
-    //         };
-    _T traits( CGAL::make_property_map( points ) );
+int main( int argc, char** argv )
+{
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " input.obj" << std::endl;
+        return (EXIT_FAILURE);
+    } // end if
+
+    // Read file
+    std::vector<_K::Point_2> points;
     _T::Polygon_2 polygon;
+    std::ifstream in_str(argv[1]);
+    std::string line;
+    std::getline(in_str, line);
+    while (!in_str.eof()) {
+        if (line[0] == 'v') {
+            std::istringstream v(line.substr(1));
+            _K::FT x, y, z;
+            v >> x >> y >> z;
+            points.push_back(_K::Point_2(x, y));
+        } else if (line[0] == 'l') {
+            std::istringstream l(line.substr(1));
+            while (!l.eof()) {
+                unsigned long long i;
+                l >> i;
+                polygon.push_back(i - 1);
+            } // end while
+            polygon.container().pop_back();
+        } // end if
+        std::getline(in_str, line);
+    } // end while
+    in_str.close();
 
-    for (int i = 0 ; i < points.size(); i++)
-    {
-        polygon.push_back( i );
-    }
+    _T traits(CGAL::make_property_map(points));
 
-    std::list< _T::Polygon_2 > partition;
-    CGAL::y_monotone_partition_2(
-        polygon.vertices_begin( ), polygon.vertices_end( ),
-        std::back_inserter( partition ), traits
-        );
+    // for (int i = 0; i < points.size(); i++) {
+    //     polygon.push_back(i);
+    // }
+    std::cout << "==============" << std::endl;
+
+    std::list<_T::Polygon_2> partition;
+    CGAL::y_monotone_partition_2(polygon.vertices_begin(),
+                                 polygon.vertices_end(),
+                                 std::back_inserter(partition), traits);
 
     std::cout << "# Vertices" << std::endl;
-    for( const auto& p: points )
+    for (const auto &p : points)
         std::cout << "v " << p << " 0" << std::endl;
 
     std::cout << std::endl;
@@ -269,24 +270,21 @@ int main() {
 
     std::cout << "# Border" << std::endl;
 
-    for( const auto& poly: partition )
-    {
-        auto container = poly.container( );
+    for (const auto &poly : partition) {
+        auto container = poly.container();
         std::cout << "l";
-		for (int p: container)
-		{
+        for (int p : container) {
             std::cout << " " << p + 1;
-		}
-        std::cout << " " << *container.begin() + 1 ;
-        std::cout << std::endl;
-    }
+                }
+                std::cout << " " << *container.begin() + 1;
+                std::cout << std::endl;
+        }
 
-    std::cout << "# internal" << std::endl;
-    for( const auto& poly: partition )
-    {
-        auto container = poly.container( );
+        std::cout << "# internal" << std::endl;
+        for (const auto &poly : partition) {
+                auto container = poly.container();
 
-        // std::cout << "# ========== " << std::endl;
+                // std::cout << "# ========== " << std::endl;
 		std::vector<TPoint2> d;
 		std::vector<int> pos;
 
@@ -307,7 +305,7 @@ int main() {
 		{
 			std::cout << "l " << pos[a.first] + 1  << ' ' << pos[a.second] + 1 << std::endl;
 		}
-    }
+        }
 
     return 0;
 }
