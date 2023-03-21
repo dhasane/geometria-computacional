@@ -2,6 +2,9 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <map>
+#include <set>
+
 
 #include <CGAL/Cartesian.h>
 #include <CGAL/partition_2.h>
@@ -16,6 +19,7 @@ using _T = CGAL::Partition_traits_2< _K, _M >;
 
 using TPoint2 = _K::Point_2;
 using TLine2 = _K::Line_2;
+using TVector2 = _K::Vector_2;
 
 bool right_segment(TPoint2 origin, TPoint2 punto)
 {
@@ -234,6 +238,146 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
     // std::cout << "final [[[]]]" ; for (auto s: S) {std::cout << s.first << " ";} std::cout << std::endl;
 }
 
+struct Relaciones {
+    std::map<int, std::set<int>> m;
+
+    Relaciones() {
+
+    }
+
+    int size() {
+        return m.size();
+    }
+
+    void add(int from, int to) {
+        this->one_way_add(from, to);
+        this->one_way_add(to, from);
+    }
+
+    std::set<int> get(int from) {
+        return m[from];
+    }
+
+    void print() {
+        for (std::map<int, std::set<int>>::iterator it = m.begin(); it != m.end(); ++it) {
+            std::cout << it->first << ": ( ";
+            for (auto a: it->second) {
+                std::cout << a << " ";
+            }
+            std::cout << ")" << std::endl;
+        }
+    }
+
+    void remove(int from, int to) {
+        this->one_way_remove(from, to);
+        // this->one_way_remove(to, from);
+    }
+
+  private:
+    void one_way_remove(int from, int to_remove) {
+        // no parece mu eficiente, pero meh
+        for (std::set<int>::iterator iter = m[from].begin(); iter != m[from].end();) {
+            if (*iter == to_remove) {
+                iter = m[from].erase(iter);
+                return;
+            } else {
+                ++iter;
+            }
+        }
+    }
+    void one_way_add(int from, int to) {
+        if (m.find(from) != m.end()) {
+            m[from].insert(to);
+        } else {
+            m[from] = {to};
+        }
+    }
+};
+
+
+double cross_product(TVector2 v1, TVector2 v2)
+{
+    return v1.x() * v2.y() - v1.y() * v2.x();
+}
+
+// TODO: revisar esto, que no parece estar correcto
+double dotProduct(TLine2 l1, TLine2 l2) {
+    TVector2 v1 = l1.to_vector();
+    TVector2 v2 = l2.to_vector();
+
+    double dot_product = v1 * v2;
+
+    double angle_rad = atan2(cross_product(v1, v2), dot_product);
+    double angle_deg = angle_rad * 180.0 / M_PI;
+
+    // siempre el menor angulo
+    double angle = angle_deg > 180 ? 360 - angle_deg : angle_deg;
+    return angle;
+}
+
+double evaluar_equilateralidad(TPoint2 p1,TPoint2 p2,TPoint2 p3){
+    TLine2 l1{p1, p2};
+    TLine2 l2{p2, p3};
+    TLine2 l3{p3, p1};
+
+    double a1 = dotProduct(l1, l2);
+    double a2 = dotProduct(l2, l3);
+    double a3 = dotProduct(l3, l1);
+
+    double dp1 = abs( 60 - a1);
+    double dp2 = abs( 60 - a2);
+    double dp3 = abs( 60 - a3);
+
+    double total = dp1 + dp2 + dp3;
+    // std::cout << "angulos: " << a1 << " " << a2 << " " << a3 << " : " << total << std::endl;
+    return total;
+}
+
+void triangulos(Relaciones r, std::vector<TPoint2> puntos) {
+    std::set<std::set<int>> triangulos;
+
+    // bueno, esto es espantosamente ineficiente
+    // la idea era ir quitando las conexiones ya usadas, pero eso tambien hace que
+    // se pierdan otras conexiones
+    // cuando tenga mas tiempo arreglo esto
+    for (int a = 0 ; a < r.size(); a++) {
+        for (auto b: r.get(a)) {
+            // std::cout << a << " :: " << b << std::endl;
+            for (auto c: r.get(b)) {
+                std::set<int> c_c = r.get(c);
+                if (c_c.find(a) != c_c.end()) {
+                    // std::cout << a << " " << b << " " << c << std::endl;
+                    std::set<int> ss;
+                    ss.insert(a);
+                    ss.insert(b);
+                    ss.insert(c);
+
+                    triangulos.insert(ss);
+                    // evaluar_equilateralidad(points[a], points[b], points[c]);
+                    // r.remove(a, b);
+                    // r.remove(b, c);
+                    // r.remove(c, a);
+                }
+            }
+        }
+    }
+    // r.print();
+
+    for (auto t: triangulos) {
+        for (auto p : t) {
+            std::cout << p << " ";
+        }
+        auto tt = t.begin();
+        int v1 = *tt;
+        tt++;
+        int v2 = *tt;
+        tt++;
+        int v3 = *tt;
+        std::cout << ": " << evaluar_equilateralidad(puntos[v1],puntos[v2],puntos[v3]);
+        std::cout << std::endl;
+    }
+}
+
 int main( int argc, char** argv )
 {
     if (argc < 2) {
@@ -283,12 +427,19 @@ int main( int argc, char** argv )
 
     std::cout << "# Border" << std::endl;
 
+    Relaciones r;
+
     for (const auto &poly : partition) {
         auto container = poly.container();
         std::cout << "l";
-        for (int p : container) {
-            std::cout << " " << p + 1;
+        for (auto p = container.begin(); p != container.end(); p++) {
+            std::cout << " " << *p + 1;
+
+            if (p != container.begin() && p != container.end()--) {
+                r.add(*(p)-1, *p);
+            }
         }
+        r.add(*container.end() - 1, *container.begin());
         std::cout << " " << *container.begin() + 1;
         std::cout << std::endl;
     }
@@ -318,9 +469,13 @@ int main( int argc, char** argv )
 
 		for (auto a : out)
 		{
+            r.add(pos[a.first], pos[a.second]);
 			std::cout << "l " << pos[a.first] + 1  << ' ' << pos[a.second] + 1 << std::endl;
 		}
     }
+
+    std::cout << std::endl;
+    triangulos(r, points);
 
     return 0;
 }
