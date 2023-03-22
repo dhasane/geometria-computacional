@@ -83,26 +83,29 @@ double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::it
 
 // https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
 template <typename T, typename F>
-std::vector<size_t> sort_indexes(const std::vector<T> &v, F&& func) {
+std::vector<size_t> sort_indexes(const std::vector<T> &v, F&& func, bool reverse) {
 	// initialize original index locations
 	std::vector<size_t> idx(v.size());
+
+	if (reverse)
+		std::reverse(idx.begin(), idx.end());
+
 	iota(idx.begin(), idx.end(), 0);
 
 	// sort indexes based on comparing values in v
 	// using std::stable_sort instead of std::sort
 	// to avoid unnecessary index re-orderings
 	// when v contains elements of equal values
+	// stable_sort(idx.begin(), idx.end(),
+	// 			[&v, &func](size_t i1, size_t i2) {return func(v[i2], v[i1]);});
 	stable_sort(idx.begin(), idx.end(),
-				[&v, &func](size_t i1, size_t i2) {return func(v[i1], v[i2]);});
+				[&v, &func](size_t i1, size_t i2) {return func(v[i2], v[i1]);});
 
 	return idx;
 }
 
 void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
 {
-	if (area_green(P.begin(), P.end()) < 0)
-		std::reverse(P.begin(), P.end());
-
 	// primero es menor que el segundo
     auto comp = [](TPoint2 a, TPoint2 b)
         {
@@ -112,34 +115,45 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
 			return a.y() < b.y();
         };
 
+    auto comp_izq = [](TPoint2 a, TPoint2 b)
+        {
+			return a.x() < b.x();
+        };
+
     std::deque<std::pair<int, bool>> S;
 
-	auto sorted_indexes = sort_indexes(P, comp); // std::sort(P.begin(), P.end(), comp);
+	auto sorted_indexes = sort_indexes(P, comp, area_green(P.begin(), P.end()) < 0);
+
+	for (auto a : sorted_indexes) {
+		std::cout << a << " "; // << "<[" << P[a] << "] ";
+	}
+
+	std::cout << std::endl;
 
 	auto i = sorted_indexes.begin();
 
     TPoint2 top = P[*i];
 
-    S.push_front({*i, false});
-	i++;
-    S.push_front({*i, comp(top, P[*i])});
+    S.push_front({*i++, false});
+    S.push_front({*i++, comp_izq(top, P[*i])});
 
 	for (; i!= sorted_indexes.end() ; i++)
 	{
-		auto point = P[*i];
-
-		bool right = comp(top, point);
-
         std::pair<int, bool> *last = NULL;
-        std::pair<int, bool> current{*i, right};
 
-        if (right != S.front().second) // lado contrario
+		// std::cout << top << " < " << P[*i] << std::endl;
+        std::pair<int, bool> current{*i, comp_izq(top, P[*i])};
+
+		// std::cout << "actual: " << current.first << " : " << current.second << std::endl;
+		// std::cout << "queue: " << S.front().first << " : " << S.front().second << std::endl;
+
+        if (current.second != S.front().second) // lado contrario
         {
-            // last = &S.front();
+            last = &S.front();
 			while( !S.empty() )
 			{
-				D.push_back({*i, S.front().first});
-				last = &S.front();
+				D.push_back({current.first, S.front().first});
+				// last = &S.front();
 				S.pop_front();
 			}
             if (last != NULL)
@@ -151,24 +165,25 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
         }
         else // mismo lado
         {
-            double area = 1;
-
-            // last = &S.front();
+            last = &S.front();
             while( !S.empty() )
             {
-                int de = *i;
+                int de = current.first;
                 int hasta = S.front().first;
 
-                area = area_green(
-                    P.begin() + (de < hasta ? de : hasta), // esto se deberia organizar
-                    P.begin() + (de < hasta ? hasta : de));
+				double area;
+				if ( de < hasta ) {
+					area = area_green(P.begin() + de, P.begin() + hasta );
+				} else {
+					area = area_green(P.begin() + hasta, P.begin() + de);
+				}
 
                 // se puede usar greene para verificar si se sale
                 // positivo es interno, negativo es externo
                 if ( 0 < area )
                 {
-                    D.push_back({*i, S.front().first});
-                    last = &S.front();
+                    D.push_back({current.first, S.front().first});
+                    // last = &S.front();
                     S.pop_front();
                 } else {
                     break;
@@ -179,6 +194,7 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
                 S.push_front(*last);
                 last = NULL;
             }
+			S.push_front(current);
         }
 	}
 }
@@ -553,10 +569,8 @@ int main( int argc, char** argv )
 			points_new_order.push_back(a);
 		}
 
-		int baseline = lines_order.size();
-		for (auto a : out)
-		{
-			lines_order.push_back({a.first + baseline, a.second + baseline});
+		for (auto a : out) {
+			lines_order.push_back({a.first, a.second});
 		}
     }
 
