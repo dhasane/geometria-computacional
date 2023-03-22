@@ -5,6 +5,8 @@
 #include <map>
 #include <set>
 
+#include <numeric>      // std::iota
+#include <algorithm>    // std::sort, std::stable_sort
 
 #include <CGAL/Cartesian.h>
 #include <CGAL/partition_2.h>
@@ -20,11 +22,6 @@ using _T = CGAL::Partition_traits_2< _K, _M >;
 using TPoint2 = _K::Point_2;
 using TLine2 = _K::Line_2;
 using TVector2 = _K::Vector_2;
-
-bool right_segment(TPoint2 origin, TPoint2 punto)
-{
-    return origin.x() < punto.x();
-}
 
 void triangulacion_greedy(std::deque<int> d)
 {
@@ -66,7 +63,6 @@ void triangulacion_greedy(std::deque<int> d)
 // double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end, bool dir)
 double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::iterator end)
 {
-    // int move = dir ? 1 : -1;
     int move = 1;
     double area = 0;
     for(std::vector<TPoint2>::iterator i=start ; i != std::next(end, - move) ; i = std::next(i, move))
@@ -77,17 +73,114 @@ double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::it
         double xd = std::next(i, move)->x();
         double yd = std::next(i, move)->y();
 
-		// std::cout << x << " " << y << " " << xd << " " << yd << std::endl;
-
         area += ( ( x * yd ) - ( y * xd ) );
     }
-
-	// std::cout << ">>" << *start << " " << *(end - 1) << std::endl;
-	// std::cout << (end-1)->x() << " " << (end-1)->y() << " " << start->x() << " " << start->y() << std::endl;
 
 	area += ( ( (end-move)->x() * start->y() ) - ( (end-move)->y() * start->x() ) );
 
     return area / 2;
+}
+
+// https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
+template <typename T, typename F>
+std::vector<size_t> sort_indexes(const std::vector<T> &v, F&& func) {
+	// initialize original index locations
+	std::vector<size_t> idx(v.size());
+	iota(idx.begin(), idx.end(), 0);
+
+	// sort indexes based on comparing values in v
+	// using std::stable_sort instead of std::sort
+	// to avoid unnecessary index re-orderings
+	// when v contains elements of equal values
+	stable_sort(idx.begin(), idx.end(),
+				[&v, &func](size_t i1, size_t i2) {return func(v[i1], v[i2]);});
+
+	return idx;
+}
+
+void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
+{
+	if (area_green(P.begin(), P.end()) < 0)
+		std::reverse(P.begin(), P.end());
+
+	// primero es menor que el segundo
+    auto comp = [](TPoint2 a, TPoint2 b)
+        {
+			if (a.y() == b.y()) {
+				return a.x() < b.x();
+			}
+			return a.y() < b.y();
+        };
+
+    std::deque<std::pair<int, bool>> S;
+
+	auto sorted_indexes = sort_indexes(P, comp); // std::sort(P.begin(), P.end(), comp);
+
+	auto i = sorted_indexes.begin();
+
+    TPoint2 top = P[*i];
+
+    S.push_front({*i, false});
+	i++;
+    S.push_front({*i, comp(top, P[*i])});
+
+	for (; i!= sorted_indexes.end() ; i++)
+	{
+		auto point = P[*i];
+
+		bool right = comp(top, point);
+
+        std::pair<int, bool> *last = NULL;
+        std::pair<int, bool> current{*i, right};
+
+        if (right != S.front().second) // lado contrario
+        {
+            // last = &S.front();
+			while( !S.empty() )
+			{
+				D.push_back({*i, S.front().first});
+				last = &S.front();
+				S.pop_front();
+			}
+            if (last != NULL)
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
+			S.push_front(current);
+        }
+        else // mismo lado
+        {
+            double area = 1;
+
+            // last = &S.front();
+            while( !S.empty() )
+            {
+                int de = *i;
+                int hasta = S.front().first;
+
+                area = area_green(
+                    P.begin() + (de < hasta ? de : hasta), // esto se deberia organizar
+                    P.begin() + (de < hasta ? hasta : de));
+
+                // se puede usar greene para verificar si se sale
+                // positivo es interno, negativo es externo
+                if ( 0 < area )
+                {
+                    D.push_back({*i, S.front().first});
+                    last = &S.front();
+                    S.pop_front();
+                } else {
+                    break;
+                }
+            }
+            if (last != NULL && *last != S.front())
+            {
+                S.push_front(*last);
+                last = NULL;
+            }
+        }
+	}
 }
 
 // evitar salirse
@@ -103,8 +196,11 @@ int positive_distance(int cur, int top, int max)
 }
 
 // no funciona perfecto, pero de momento creo que es suficiente
-void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &D)
+void triangulacion_rot(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
 {
+	if (area_green(P.begin(), P.end()) < 0)
+		std::reverse(P.begin(), P.end());
+
     std::deque<std::pair<int, bool>> S;
 
 	// primero es menor que el segundo
@@ -405,66 +501,79 @@ int main( int argc, char** argv )
                                  polygon.vertices_end(),
                                  std::back_inserter(partition), traits);
 
-    std::cout << "# Vertices" << std::endl;
-    for (const auto &p : points)
-        std::cout << "v " << p << " 0" << std::endl;
+    // std::cout << "# Vertices" << std::endl;
+    // for (const auto &p : points)
+    //     std::cout << "v " << p << " 0" << std::endl;
 
-    std::cout << std::endl;
+    // std::cout << std::endl;
 
-    std::cout << "# Lines" << std::endl;
+    // std::cout << "# Lines" << std::endl;
 
-    std::cout << "# Border" << std::endl;
+    // std::cout << "# Border" << std::endl;
 
     Relaciones r;
 
+
+    std::vector<_K::Point_2> points_new_order;
+    std::vector<std::pair<int, int>> lines_order;
+
     for (const auto &poly : partition) {
         auto container = poly.container();
-        std::cout << "l";
+        // std::cout << "l";
         auto prev = container.begin();
         for (auto p = container.begin(); p != container.end(); p++) {
-            std::cout << " " << *p + 1;
+            // std::cout << " " << *p + 1;
 
             if (p != container.begin() && p != container.end()--) {
                 r.add(*prev, *p);
+                lines_order.push_back({*prev, *p});
             }
             prev = p;
         }
         r.add(*prev, *container.begin());
-        std::cout << " " << *container.begin() + 1;
-        std::cout << std::endl;
+		lines_order.push_back({*prev, *container.begin()});
+        // std::cout << " " << *container.begin() + 1;
+        // std::cout << std::endl;
     }
 
-    std::cout << "# internal" << std::endl;
     for (const auto &poly : partition) {
-        auto container = poly.container();
-
+		// vector solo con los puntos necesarios
 		std::vector<TPoint2> d;
-		std::vector<int> pos;
-
-        std::cout << "# ";
-        int i = 0;
-		for (int p: container)
+		for (int p: poly.container())
 		{
 			TPoint2 point = points[p];
-            std::cout << "(" << i << ":" << p+1 << ":[" << point << "]) " ;
-            i++;
             d.push_back(point);
-            pos.push_back(p);
         }
-        std::cout << std::endl;
 
 		std::deque<std::pair<int, int>> out;
-		triangulacion_rot(d, out);
+		// triangulacion_rot(d, out);
+		triangulacion(d, out);
 
+		for (auto a: d) {
+			points_new_order.push_back(a);
+		}
+
+		int baseline = lines_order.size();
 		for (auto a : out)
 		{
-            r.add(pos[a.first], pos[a.second]);
-			std::cout << "l " << pos[a.first] + 1  << ' ' << pos[a.second] + 1 << std::endl;
+			lines_order.push_back({a.first + baseline, a.second + baseline});
 		}
     }
 
+	std::cout << "# points " << std::endl;
+	for (auto a: points_new_order) {
+        std::cout << "v " << a << " 0" << std::endl;
+	}
+
+	std::cout << "# lines " << std::endl;
+	for (auto a : lines_order)
+	{
+		std::cout << "l " << a.first + 1  << ' ' << a.second + 1 << std::endl;
+	}
+
+
     std::cout << std::endl;
-    evaluar_equilateralidad_poligono(triangulos(r), points);
+    // evaluar_equilateralidad_poligono(triangulos(r), points);
 
     return 0;
 }
