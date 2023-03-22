@@ -124,12 +124,6 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
 
 	auto sorted_indexes = sort_indexes(P, comp, area_green(P.begin(), P.end()) < 0);
 
-	for (auto a : sorted_indexes) {
-		std::cout << a << " "; // << "<[" << P[a] << "] ";
-	}
-
-	std::cout << std::endl;
-
 	auto i = sorted_indexes.begin();
 
     TPoint2 top = P[*i];
@@ -137,35 +131,26 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
     S.push_front({*i++, false});
     S.push_front({*i++, comp_izq(top, P[*i])});
 
+	 std::pair<int, bool> *prev = NULL;
+
 	for (; i!= sorted_indexes.end() ; i++)
 	{
-        std::pair<int, bool> *last = NULL;
-
-		// std::cout << top << " < " << P[*i] << std::endl;
         std::pair<int, bool> current{*i, comp_izq(top, P[*i])};
-
-		// std::cout << "actual: " << current.first << " : " << current.second << std::endl;
-		// std::cout << "queue: " << S.front().first << " : " << S.front().second << std::endl;
 
         if (current.second != S.front().second) // lado contrario
         {
-            last = &S.front();
-			while( !S.empty() )
+			while( 1 < S.size() )
 			{
 				D.push_back({current.first, S.front().first});
-				// last = &S.front();
 				S.pop_front();
 			}
-            if (last != NULL)
-            {
-                S.push_front(*last);
-                last = NULL;
-            }
+			if (prev!=NULL)
+				S.push_front(*prev);
 			S.push_front(current);
         }
         else // mismo lado
         {
-            last = &S.front();
+			std::pair<int, bool> *last = NULL;
             while( !S.empty() )
             {
                 int de = current.first;
@@ -182,20 +167,32 @@ void triangulacion(std::vector<TPoint2> &P, std::deque<std::pair<int, int>> &D)
                 // positivo es interno, negativo es externo
                 if ( 0 < area )
                 {
-                    D.push_back({current.first, S.front().first});
-                    // last = &S.front();
+                    last = &S.front();
+                    D.push_back({current.first, last->first});
                     S.pop_front();
                 } else {
                     break;
                 }
             }
-            if (last != NULL && *last != S.front())
+            if (last != NULL)
             {
                 S.push_front(*last);
-                last = NULL;
             }
-			S.push_front(current);
         }
+
+		if( 1 < S.size() )
+		{
+			S.pop_front();
+			while( 1 < S.size() )
+			{
+				std::cout << current.first << " " << S.front().first << std::endl;
+				D.push_back({current.first, S.front().first});
+				S.pop_front();
+			}
+		}
+
+
+		prev = &current;
 	}
 }
 
@@ -517,25 +514,14 @@ int main( int argc, char** argv )
                                  polygon.vertices_end(),
                                  std::back_inserter(partition), traits);
 
-    // std::cout << "# Vertices" << std::endl;
-    // for (const auto &p : points)
-    //     std::cout << "v " << p << " 0" << std::endl;
-
-    // std::cout << std::endl;
-
-    // std::cout << "# Lines" << std::endl;
-
-    // std::cout << "# Border" << std::endl;
-
     Relaciones r;
-
-
     std::vector<_K::Point_2> points_new_order;
     std::vector<std::pair<int, int>> lines_order;
 
     for (const auto &poly : partition) {
         auto container = poly.container();
-        // std::cout << "l";
+
+		// BORDE
         auto prev = container.begin();
         for (auto p = container.begin(); p != container.end(); p++) {
             // std::cout << " " << *p + 1;
@@ -548,20 +534,23 @@ int main( int argc, char** argv )
         }
         r.add(*prev, *container.begin());
 		lines_order.push_back({*prev, *container.begin()});
-        // std::cout << " " << *container.begin() + 1;
-        // std::cout << std::endl;
-    }
 
-    for (const auto &poly : partition) {
+		// INTERNO
 		// vector solo con los puntos necesarios
 		std::vector<TPoint2> d;
-		for (int p: poly.container())
+		std::deque<std::pair<int, int>> out;
+
+		for (int p: container)
 		{
 			TPoint2 point = points[p];
             d.push_back(point);
         }
 
-		std::deque<std::pair<int, int>> out;
+		for (auto a : d) {
+			std::cout << " ["<< a << "] " ;
+		}
+		std::cout << std::endl;
+
 		// triangulacion_rot(d, out);
 		triangulacion(d, out);
 
