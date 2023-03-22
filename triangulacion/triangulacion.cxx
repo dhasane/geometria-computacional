@@ -128,8 +128,6 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 	int it_izq = next(top, -1, P.size());
 	int it_der = next(top, 1, P.size());
 
-    // std::cout << it_izq << " " << top << " " << it_der << std::endl;
-
     // S.push_front({top, false});
     bool right = comp(P[it_izq], P[it_der]);
     if (right)
@@ -143,16 +141,12 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
         it_izq = next(it_izq, -1, P.size());
     }
 
-    // std::cout << to_string<std::pair<int, bool>>(S.begin(), S.end()) << std::endl;
-
-	// while (it_izq != it_der && it_izq != next(it_der, 1, P.size()))
     // TODO: encontrar como evitar el ultimo paso
 	while (it_izq != it_der)
         // while (positive_distance(it_izq, top, P.size()) > positive_distance(it_der, top, P.size()))
 	{
 		int *i;
 
-        // std::cout << "[[[]]]" ; for (auto s: S) {std::cout << s.first << " ";} std::cout << std::endl;
 		bool right = comp(P[it_izq], P[it_der]);
 		if (right)
 		{
@@ -163,19 +157,14 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 			i = &it_izq;
 		}
 
-        // std::cout << ">> " << it_izq << ":[" << P[it_izq] << "] " << it_der << ":[" << P[it_der] << "]" << std::endl;
-        // std::cout << ">> " << "i:" << *i << "[" << P[*i] << "] S.top:" << S.front().first << ":[" << P[S.front().first] <<"]" << std::endl;
-
         std::pair<int, bool> *last = NULL;
         std::pair<int, bool> current{*i, right};
 
         if (right != S.front().second) // lado contrario
         {
-            // std::cout << "contrario: " << std::endl;
             last = &S.front();
 			while( !S.empty() )
 			{
-                // std::cout << "contrario: " << *i << " " << S.front().first << std::endl;
 				D.push_back({*i, S.front().first});
 				// last = &S.front();
 				S.pop_front();
@@ -189,7 +178,6 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
         }
         else // mismo lado
         {
-            // std::cout << "mismo: " << std::endl;
             double area = 1;
 
             last = &S.front();
@@ -198,23 +186,18 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
                 int de = *i;
                 int hasta = S.front().first;
 
-                // std::cout << "de " << de << " hasta " << hasta << std::endl;
                 area = area_green(
                     P.begin() + (de < hasta ? de : hasta), // esto se deberia organizar
                     P.begin() + (de < hasta ? hasta : de));
-
-                // std::cout << area << std::endl;
 
                 // se puede usar greene para verificar si se sale
                 // positivo es interno, negativo es externo
                 if ( 0 < area )
                 {
-                    // std::cout << "mismo: " << *i << " " << S.front().first << std::endl;
                     D.push_back({*i, S.front().first});
                     // last = &S.front();
                     S.pop_front();
                 } else {
-                    // std::cout << "saliendo" << std::endl;
                     break;
                 }
             }
@@ -233,9 +216,7 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 		{
             *i = next(*i, -1, P.size());
 		}
-        // std::cout << "loop" << std::endl;
 	}
-    // std::cout << "final [[[]]]" ; for (auto s: S) {std::cout << s.first << " ";} std::cout << std::endl;
 }
 
 struct Relaciones {
@@ -270,12 +251,12 @@ struct Relaciones {
 
     void remove(int from, int to) {
         this->one_way_remove(from, to);
-        // this->one_way_remove(to, from);
+        this->one_way_remove(to, from);
     }
 
   private:
     void one_way_remove(int from, int to_remove) {
-        // no parece mu eficiente, pero meh
+        // no parece muy eficiente
         for (std::set<int>::iterator iter = m[from].begin(); iter != m[from].end();) {
             if (*iter == to_remove) {
                 iter = m[from].erase(iter);
@@ -303,18 +284,15 @@ std::set<std::set<int>> triangulos(Relaciones r) {
     // cuando tenga mas tiempo arreglo esto
     for (int a = 0 ; a < r.size(); a++) {
         for (auto b: r.get(a)) {
-            // std::cout << a << " :: " << b << std::endl;
             for (auto c: r.get(b)) {
                 std::set<int> c_c = r.get(c);
                 if (c_c.find(a) != c_c.end()) {
-                    // std::cout << a << " " << b << " " << c << std::endl;
                     std::set<int> ss;
                     ss.insert(a);
                     ss.insert(b);
                     ss.insert(c);
 
                     triangulos.insert(ss);
-                    // evaluar_equilateralidad(points[a], points[b], points[c]);
                     // r.remove(a, b);
                     // r.remove(b, c);
                     // r.remove(c, a);
@@ -359,7 +337,6 @@ double evaluar_equilateralidad(TPoint2 p1,TPoint2 p2,TPoint2 p3){
     double dp3 = abs( 60 - a3);
 
     double total = dp1 + dp2 + dp3;
-    // std::cout << "angulos: " << a1 << " " << a2 << " " << a3 << " : " << total << std::endl;
     return total;
 }
 
@@ -461,7 +438,6 @@ int main( int argc, char** argv )
     for (const auto &poly : partition) {
         auto container = poly.container();
 
-        // std::cout << "# ========== " << std::endl;
 		std::vector<TPoint2> d;
 		std::vector<int> pos;
 
@@ -488,7 +464,6 @@ int main( int argc, char** argv )
     }
 
     std::cout << std::endl;
-    // r.print();
     evaluar_equilateralidad_poligono(triangulos(r), points);
 
     return 0;
