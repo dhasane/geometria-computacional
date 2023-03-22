@@ -1,4 +1,8 @@
 * Taller triangulacion
+** integrantes
+- Daniel Hamilton-Smith
+- Agustin Santiago Salazar Millan
+- Mateo David Alvarez
 ** ejecucion
 *** compilar
 crear carpeta build
