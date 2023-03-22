@@ -294,6 +294,36 @@ struct Relaciones {
     }
 };
 
+std::set<std::set<int>> triangulos(Relaciones r) {
+    std::set<std::set<int>> triangulos;
+
+    // bueno, esto es espantosamente ineficiente
+    // la idea era ir quitando las conexiones ya usadas, pero eso tambien hace que
+    // se pierdan otras conexiones
+    // cuando tenga mas tiempo arreglo esto
+    for (int a = 0 ; a < r.size(); a++) {
+        for (auto b: r.get(a)) {
+            // std::cout << a << " :: " << b << std::endl;
+            for (auto c: r.get(b)) {
+                std::set<int> c_c = r.get(c);
+                if (c_c.find(a) != c_c.end()) {
+                    // std::cout << a << " " << b << " " << c << std::endl;
+                    std::set<int> ss;
+                    ss.insert(a);
+                    ss.insert(b);
+                    ss.insert(c);
+
+                    triangulos.insert(ss);
+                    // evaluar_equilateralidad(points[a], points[b], points[c]);
+                    // r.remove(a, b);
+                    // r.remove(b, c);
+                    // r.remove(c, a);
+                }
+            }
+        }
+    }
+    return triangulos;
+}
 
 double cross_product(TVector2 v1, TVector2 v2)
 {
@@ -333,62 +363,30 @@ double evaluar_equilateralidad(TPoint2 p1,TPoint2 p2,TPoint2 p3){
     return total;
 }
 
-void triangulos(Relaciones r, std::vector<TPoint2> puntos) {
-    std::set<std::set<int>> triangulos;
-
-    // bueno, esto es espantosamente ineficiente
-    // la idea era ir quitando las conexiones ya usadas, pero eso tambien hace que
-    // se pierdan otras conexiones
-    // cuando tenga mas tiempo arreglo esto
-    for (int a = 0 ; a < r.size(); a++) {
-        for (auto b: r.get(a)) {
-            // std::cout << a << " :: " << b << std::endl;
-            for (auto c: r.get(b)) {
-                std::set<int> c_c = r.get(c);
-                if (c_c.find(a) != c_c.end()) {
-                    // std::cout << a << " " << b << " " << c << std::endl;
-                    std::set<int> ss;
-                    ss.insert(a);
-                    ss.insert(b);
-                    ss.insert(c);
-
-                    triangulos.insert(ss);
-                    // evaluar_equilateralidad(points[a], points[b], points[c]);
-                    // r.remove(a, b);
-                    // r.remove(b, c);
-                    // r.remove(c, a);
-                }
-            }
-        }
-    }
-    // r.print();
-
+double evaluar_equilateralidad_poligono(std::set<std::set<int>> triangulos, std::vector<TPoint2> puntos)
+{
+    double puntaje_total;
     for (auto t: triangulos) {
-        for (auto p : t) {
-            std::cout << p << " ";
-        }
         auto tt = t.begin();
         int v1 = *tt;
         tt++;
         int v2 = *tt;
         tt++;
         int v3 = *tt;
-        std::cout << ": " << evaluar_equilateralidad(puntos[v1],puntos[v2],puntos[v3]);
+        double puntaje_triangulo = evaluar_equilateralidad(puntos[v1],puntos[v2],puntos[v3]);
+        puntaje_total += puntaje_triangulo;
+
+        for (auto p : t) {
+            std::cout << p << " ";
+        }
+        std::cout << ": " << puntaje_triangulo;
         std::cout << std::endl;
     }
+    return puntaje_total;
 }
 
-int main( int argc, char** argv )
-{
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " input.obj" << std::endl;
-        return (EXIT_FAILURE);
-    } // end if
-
-    // Read file
-    std::vector<_K::Point_2> points;
-    _T::Polygon_2 polygon;
-    std::ifstream in_str(argv[1]);
+void load_points(std::string filename, std::vector<_K::Point_2> &points, _T::Polygon_2 & polygon) {
+    std::ifstream in_str(filename);
     std::string line;
     std::getline(in_str, line);
     while (!in_str.eof()) {
@@ -409,6 +407,19 @@ int main( int argc, char** argv )
         std::getline(in_str, line);
     } // end while
     in_str.close();
+}
+
+int main( int argc, char** argv )
+{
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " input.obj" << std::endl;
+        return (EXIT_FAILURE);
+    } // end if
+
+    // Read file
+    std::vector<_K::Point_2> points;
+    _T::Polygon_2 polygon;
+    load_points(argv[1], points, polygon);
 
     _T traits(CGAL::make_property_map(points));
 
@@ -432,14 +443,16 @@ int main( int argc, char** argv )
     for (const auto &poly : partition) {
         auto container = poly.container();
         std::cout << "l";
+        auto prev = container.begin();
         for (auto p = container.begin(); p != container.end(); p++) {
             std::cout << " " << *p + 1;
 
             if (p != container.begin() && p != container.end()--) {
-                r.add(*(p)-1, *p);
+                r.add(*prev, *p);
             }
+            prev = p;
         }
-        r.add(*container.end() - 1, *container.begin());
+        r.add(*prev, *container.begin());
         std::cout << " " << *container.begin() + 1;
         std::cout << std::endl;
     }
@@ -475,7 +488,8 @@ int main( int argc, char** argv )
     }
 
     std::cout << std::endl;
-    triangulos(r, points);
+    // r.print();
+    evaluar_equilateralidad_poligono(triangulos(r), points);
 
     return 0;
 }
