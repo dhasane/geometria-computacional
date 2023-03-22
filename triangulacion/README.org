@@ -1,5 +1,6 @@
 * Taller triangulacion
-** compilar
+** ejecucion
+*** compilar
 crear carpeta build
 #+begin_src sh
 mkdir build
@@ -9,45 +10,54 @@ correr cmake y make
 #+begin_src sh
 cd mkdir ; cmake .. ; make ; cd -
 #+end_src
-** ejecutar
+*** ejecutar
 el proyecto se ejecuta como
 #+begin_src sh
 ./triangulacion <archivo.obj>
 #+end_src
+** algoritmo
+Al algoritmo se le hizo una modificación en la forma de encontrar el valor máximo. Esto se hizo en un intento de evitar no modificar la lista, de forma que los puntos se mantuvieran en un orden consistente.
 
+*** explicacion cambio
+#+begin_src
+se encuentra valor maximo top
+a partir de este valor, se encuentran los valores a la izquierda y a la derecha
+mientras izq != der
+    dentro del while se realiza mas o menos lo mismo que en el algoritmo original
+#+end_src
+*** conclusion cambio
+A pesar del cambio, el algoritmo parece funcionar correctamente para varios tipos de poligonos.
+Un problema con este cambio, es que afectó la forma de manejar correctamente poligonos complejos. Esto hizo que los poligonos complejos (polygon_01.obj, polygon_02.obj), tuvieran varios errores.
+Esto se debe a que no se tiene en cuenta que haya puntos potencialmente arriba del punto que se revisa actualmente, lo que impacta la forma de medir si se puede o no hacer una linea entre dos puntos.
 ** evaluar equilateralidad de triangulos
-Para encontrar los triangulos, se genero un grafo de relaciones entre un punto y los que estén adyacentes a este.
+para encontrar los triangulos a partir de la lista de vertices se utilizó un grafo, después, utilizando los triangulos conseguidos, se calculó los angulos entre los diferentes puntos de cada triangulo y se utilizó la siguiente ecuación.
 
-A partir de este grafo, se buscan las conexiones que, después de dos saltos, vuelvan al mismo punto de inico.
-
-El problema de este método, o por lo menos de esta implementación, es que es particularmente ineficiente.
-
-#+begin_src cpp
-std::set<std::set<int>> triangulos(Relaciones r) {
-    std::set<std::set<int>> triangulos;
-    for (int a = 0 ; a < r.size(); a++) {
-        for (auto b: r.get(a)) {
-            for (auto c: r.get(b)) {
-                std::set<int> c_c = r.get(c);
-                if (c_c.find(a) != c_c.end()) {
-                    std::set<int> ss;
-                    ss.insert(a);
-                    ss.insert(b);
-                    ss.insert(c);
-
-                    triangulos.insert(ss);
-                }
-            }
-        }
-    }
-    return triangulos;
-}
+#+begin_src
+|60 - angulo1|* |60 - angulo2|* |60 - angulo3|
 #+end_src
 
-Inicialmente se pensaba eliminar las conexiones después de pasar por estas, pero eso potencialmente causaría que otro triangulo no se pueda completar.
+*** ejemplo
+Dando de ejemplo un pentagono
 
+Se genera la siguiente lista de relaciones
+#+begin_src
+0: ( 1 2 3 4 )
+1: ( 0 2 )
+2: ( 0 1 3 )
+3: ( 0 2 4 )
+4: ( 0 3 )
+#+end_src
+
+a partir de este conjunto de relaciones, se genera la lista de triangulos. Para esto se busca que después de dos saltos haya una relacion con el valor inicial.
+#+begin_src
+0 1 2
+0 2 3
+0 3 4
+#+end_src
 *** estructura grafo
-la estructura para definir el grafo es la siguiente
+Para encontrar los triangulos, se genero un grafo de relaciones entre un punto y los que estén adyacentes a este.
+
+La estructura para definir el grafo es la siguiente:
 #+begin_src cpp
 struct Relaciones {
     std::map<int, std::set<int>> m;
@@ -81,12 +91,11 @@ struct Relaciones {
 
     void remove(int from, int to) {
         this->one_way_remove(from, to);
-        // this->one_way_remove(to, from);
+        this->one_way_remove(to, from);
     }
 
   private:
     void one_way_remove(int from, int to_remove) {
-        // no parece mu eficiente, pero meh
         for (std::set<int>::iterator iter = m[from].begin(); iter != m[from].end();) {
             if (*iter == to_remove) {
                 iter = m[from].erase(iter);
@@ -105,3 +114,31 @@ struct Relaciones {
     }
 };
 #+end_src
+*** algoritmo
+A partir del grafo generado se buscan las conexiones que después de dos saltos vuelvan al mismo punto de inico.
+
+El problema de este método, o por lo menos de esta implementación, es que es muy ineficiente. Honestamente fue la primera solución que pensé y no tuve tiempo de optimizar. Probablemente se podría hacer un mejor manejo de los sets, o hacer algún tipo de arbol.
+
+#+begin_src cpp
+std::set<std::set<int>> triangulos(Relaciones r) {
+    std::set<std::set<int>> triangulos;
+    for (int a = 0 ; a < r.size(); a++) {
+        for (auto b: r.get(a)) {
+            for (auto c: r.get(b)) {
+                std::set<int> c_c = r.get(c);
+                if (c_c.find(a) != c_c.end()) {
+                    std::set<int> ss;
+                    ss.insert(a);
+                    ss.insert(b);
+                    ss.insert(c);
+
+                    triangulos.insert(ss);
+                }
+            }
+        }
+    }
+    return triangulos;
+}
+#+end_src
+
+Inicialmente se pensaba eliminar las conexiones después de pasar por estas, de forma que la cantidad de ciclos se fuera reduciendo. El problema con esta idea, es que potencialmente causaría que otros triangulos que utilicen este vertice no se puedan completar.
