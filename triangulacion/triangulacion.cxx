@@ -116,7 +116,7 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
 			return a.y() < b.y();
         };
 
-    int top = 0 ;
+    int top = 0;
     for (int i = 1 ; i < P.size() ; i++)
     {
         if (comp(P[top], P[i]))
@@ -141,81 +141,74 @@ void triangulacion_rot(std::vector<TPoint2> P, std::deque<std::pair<int, int>> &
         it_izq = next(it_izq, -1, P.size());
     }
 
+	std::pair<int, bool> *prev = NULL;
+
     // TODO: encontrar como evitar el ultimo paso
 	while (it_izq != it_der)
         // while (positive_distance(it_izq, top, P.size()) > positive_distance(it_der, top, P.size()))
 	{
-		int *i;
 
 		bool right = comp(P[it_izq], P[it_der]);
-		if (right)
-		{
-			i = &it_der;
-		}
-		else
-		{
-			i = &it_izq;
-		}
 
-        std::pair<int, bool> *last = NULL;
+		int *i = right ? &it_der : &it_izq;
         std::pair<int, bool> current{*i, right};
 
-        if (right != S.front().second) // lado contrario
+        if (current.second != S.front().second) // lado contrario
         {
-            last = &S.front();
 			while( !S.empty() )
 			{
 				D.push_back({*i, S.front().first});
-				// last = &S.front();
 				S.pop_front();
 			}
-            if (last != NULL)
-            {
-                S.push_front(*last);
-                last = NULL;
-            }
+			if (prev!=NULL)
+				S.push_front(*prev);
 			S.push_front(current);
         }
         else // mismo lado
         {
-            double area = 1;
-
-            last = &S.front();
+			std::pair<int, bool> *last = NULL;
             while( !S.empty() )
             {
                 int de = *i;
                 int hasta = S.front().first;
 
-                area = area_green(
-                    P.begin() + (de < hasta ? de : hasta), // esto se deberia organizar
-                    P.begin() + (de < hasta ? hasta : de));
+				double area;
+				if ( de < hasta ) {
+					area = area_green(P.begin() + de, P.begin() + hasta );
+				} else {
+					area = area_green(P.begin() + hasta, P.begin() + de);
+				}
 
                 // se puede usar greene para verificar si se sale
                 // positivo es interno, negativo es externo
                 if ( 0 < area )
                 {
                     D.push_back({*i, S.front().first});
-                    // last = &S.front();
+                    last = &S.front();
                     S.pop_front();
                 } else {
                     break;
                 }
             }
-            if (last != NULL && *last != S.front())
+            if (last != NULL)
             {
                 S.push_front(*last);
-                last = NULL;
             }
         }
 
-		if (right)
+		if( 1 < S.size() )
 		{
-            *i = next(*i, 1, P.size());
+			S.pop_front();
+			while( 1 < S.size() )
+			{
+				D.push_back({current.first, S.front().first});
+				S.pop_front();
+			}
 		}
-		else
-		{
-            *i = next(*i, -1, P.size());
-		}
+
+		*i = next(*i, ((right)? 1 : -1), P.size());
+
+		prev = &current;
 	}
 }
 
@@ -343,6 +336,7 @@ double evaluar_equilateralidad(TPoint2 p1,TPoint2 p2,TPoint2 p3){
 double evaluar_equilateralidad_poligono(std::set<std::set<int>> triangulos, std::vector<TPoint2> puntos)
 {
     double puntaje_total;
+	std::cout << "# equilateralidad" << std::endl;
     for (auto t: triangulos) {
         auto tt = t.begin();
         int v1 = *tt;
@@ -353,6 +347,7 @@ double evaluar_equilateralidad_poligono(std::set<std::set<int>> triangulos, std:
         double puntaje_triangulo = evaluar_equilateralidad(puntos[v1],puntos[v2],puntos[v3]);
         puntaje_total += puntaje_triangulo;
 
+		std::cout << "# ";
         for (auto p : t) {
             std::cout << p << " ";
         }
@@ -413,12 +408,12 @@ int main( int argc, char** argv )
 
     std::cout << "# Lines" << std::endl;
 
-    std::cout << "# Border" << std::endl;
-
     Relaciones r;
-
-    for (const auto &poly : partition) {
+	for (const auto &poly : partition) {
         auto container = poly.container();
+
+		std::cout << "# Border" << std::endl;
+		// BORDE
         std::cout << "l";
         auto prev = container.begin();
         for (auto p = container.begin(); p != container.end(); p++) {
@@ -432,15 +427,13 @@ int main( int argc, char** argv )
         r.add(*prev, *container.begin());
         std::cout << " " << *container.begin() + 1;
         std::cout << std::endl;
-    }
 
-    std::cout << "# internal" << std::endl;
-    for (const auto &poly : partition) {
-        auto container = poly.container();
+		// INTERNO
 
 		std::vector<TPoint2> d;
 		std::vector<int> pos;
 
+		std::cout << "# internal" << std::endl;
         std::cout << "# ";
         int i = 0;
 		for (int p: container)
@@ -463,7 +456,6 @@ int main( int argc, char** argv )
 		}
     }
 
-    std::cout << std::endl;
     evaluar_equilateralidad_poligono(triangulos(r), points);
 
     return 0;
