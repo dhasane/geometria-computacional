@@ -1,0 +1,107 @@
+* Taller triangulacion
+** compilar
+crear carpeta build
+#+begin_src sh
+mkdir build
+#+end_src
+
+correr cmake y make
+#+begin_src sh
+cd mkdir ; cmake .. ; make ; cd -
+#+end_src
+** ejecutar
+el proyecto se ejecuta como
+#+begin_src sh
+./triangulacion <archivo.obj>
+#+end_src
+
+** evaluar equilateralidad de triangulos
+Para encontrar los triangulos, se genero un grafo de relaciones entre un punto y los que estén adyacentes a este.
+
+A partir de este grafo, se buscan las conexiones que, después de dos saltos, vuelvan al mismo punto de inico.
+
+El problema de este método, o por lo menos de esta implementación, es que es particularmente ineficiente.
+
+#+begin_src cpp
+std::set<std::set<int>> triangulos(Relaciones r) {
+    std::set<std::set<int>> triangulos;
+    for (int a = 0 ; a < r.size(); a++) {
+        for (auto b: r.get(a)) {
+            for (auto c: r.get(b)) {
+                std::set<int> c_c = r.get(c);
+                if (c_c.find(a) != c_c.end()) {
+                    std::set<int> ss;
+                    ss.insert(a);
+                    ss.insert(b);
+                    ss.insert(c);
+
+                    triangulos.insert(ss);
+                }
+            }
+        }
+    }
+    return triangulos;
+}
+#+end_src
+
+Inicialmente se pensaba eliminar las conexiones después de pasar por estas, pero eso potencialmente causaría que otro triangulo no se pueda completar.
+
+*** estructura grafo
+la estructura para definir el grafo es la siguiente
+#+begin_src cpp
+struct Relaciones {
+    std::map<int, std::set<int>> m;
+
+    Relaciones() {
+
+    }
+
+    int size() {
+        return m.size();
+    }
+
+    void add(int from, int to) {
+        this->one_way_add(from, to);
+        this->one_way_add(to, from);
+    }
+
+    std::set<int> get(int from) {
+        return m[from];
+    }
+
+    void print() {
+        for (std::map<int, std::set<int>>::iterator it = m.begin(); it != m.end(); ++it) {
+            std::cout << it->first << ": ( ";
+            for (auto a: it->second) {
+                std::cout << a << " ";
+            }
+            std::cout << ")" << std::endl;
+        }
+    }
+
+    void remove(int from, int to) {
+        this->one_way_remove(from, to);
+        // this->one_way_remove(to, from);
+    }
+
+  private:
+    void one_way_remove(int from, int to_remove) {
+        // no parece mu eficiente, pero meh
+        for (std::set<int>::iterator iter = m[from].begin(); iter != m[from].end();) {
+            if (*iter == to_remove) {
+                iter = m[from].erase(iter);
+                return;
+            } else {
+                ++iter;
+            }
+        }
+    }
+    void one_way_add(int from, int to) {
+        if (m.find(from) != m.end()) {
+            m[from].insert(to);
+        } else {
+            m[from] = {to};
+        }
+    }
+};
+#+end_src
