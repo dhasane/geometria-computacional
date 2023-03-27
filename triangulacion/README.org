@@ -27,7 +27,12 @@ Al algoritmo se le hizo una modificación en la forma de encontrar el valor máx
 se encuentra valor maximo top
 a partir de este valor, se encuentran los valores a la izquierda y a la derecha
 mientras izq != der
+    se toma el valor maximo entre izq y der
     dentro del while se realiza mas o menos lo mismo que en el algoritmo original
+    if valor mayor izq
+        izq--
+    else 
+        der++
 #+end_src
 *** conclusion cambio
 A pesar del cambio, el algoritmo parece funcionar correctamente para varios tipos de poligonos.
