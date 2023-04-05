@@ -18,8 +18,9 @@ using AP = CGAL::Delaunay_triangulation_caching_degeneracy_removal_policy_2<DT>;
 using VD = CGAL::Voronoi_diagram_2<DT,AT,AP>;
 
 using Face     = VD::Face;
-using Vertex   = VD::Vertex;
 using Halfedge = VD::Halfedge;
+using Face_handle     = VD::Face_handle;
+using Halfedge_handle = VD::Halfedge_handle;
 
 using TPoint2 = K::Point_2;
 using TLine2  = K::Line_2;
@@ -49,7 +50,7 @@ double calculate_face_area (Face &a) {
     Halfedge he = *a.halfedge();
 
     bool check_area = true;
-    while(he.next() != a.halfedge())
+    while(check_area && he.next() != a.halfedge())
     {
         // siempre poner el punto anterior
         if (he.previous()->has_target()) {
@@ -57,7 +58,6 @@ double calculate_face_area (Face &a) {
             he = *he.next();
         } else {
             check_area = false;
-            break;
         }
     }
     if (check_area) {
@@ -85,9 +85,109 @@ int get_faces_areas(VD::Face_iterator faces_begin, VD::Face_iterator faces_end) 
     return pos_max;
 }
 
+Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_iterator faces_end) {
+    Face_handle fh;
+    double max_area = 0;
+
+    for (auto it = faces_begin; it != faces_end; it++) {
+        double area = calculate_face_area(*it);
+        // std::cout << pos << ": " << area << std::endl;
+        if (max_area < area) {
+            max_area = area;
+            fh = it;
+        }
+    }
+
+    std::cout << "max area: " << max_area << " pos: [" << *fh->dual() << "]" << std::endl;
+    return fh;
+}
+
+class Centros{
+    std::set<Face_handle> centros;
+    std::vector<Face_handle> nuevos;
+
+    bool present(Face_handle fh) {
+        return this->centros.find(fh) != this->centros.end();
+    }
+
+    Face_handle get_cont_face(Halfedge_handle &he) {
+        return he->opposite()->face();
+    };
+
+    void merge() {
+        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
+            this->centros.insert(*i);
+        }
+    }
+
+    void replace_new(std::vector<Face_handle> new_faces) {
+        this->nuevos = new_faces;
+    }
+
+    TPoint2 face_to_point(Face_handle fh) {
+        // a delaunay
+        return fh->dual()->point();
+    }
+
+public:
+
+    Centros(Face_handle initial_face) {
+        this->centros.insert(initial_face);
+        this->nuevos.push_back(initial_face);
+    }
+
+    void siguiente_nivel() {
+        std::vector<Face_handle> new_faces;
+        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
+            Face_handle f = *i;
+
+            Halfedge_handle he = f->halfedge();
+            // para cada arista
+            while (he->next() != f->halfedge()) {
+                Face_handle fh = get_cont_face(he);
+                // revisar cada cara contraria, que no esté en
+                // Centros.centros
+                if (!this->present(fh)) {
+                    // si no esta, se agrega a Centros.nuevos
+                    new_faces.push_back(fh);
+
+                    // para evitar volver a revisar valores que esten entre los nuevos
+                    this->centros.insert(fh);
+                }
+                // de lo contrario, no se hace nada
+                he = he->next();
+            }
+        }
+        // valor cambian Centros.nuevos por los nuevos encontrados
+        this->replace_new(new_faces);
+    }
+
+    bool change() {
+        // si los nuevos estan vacios, significa que en la ultima ronda no hubo cambio
+        return !this->nuevos.empty();
+    }
+
+    double size() {
+        return this->centros.size();
+    }
+
+    void print() {
+        // esto imprime los centroides de las caras
+        std::cout << "centros:" << std::endl;
+        for (auto i = this->centros.begin(); i != this->centros.end(); i++) {
+            std::cout << "- " << this->face_to_point(*i) << std::endl;
+        }
+        std::cout << "nuevos:" << std::endl;
+        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
+            std::cout << "- " << this->face_to_point(*i) << std::endl;
+        }
+    }
+};
+
 int main(int argc, char** argv)
 {
-    int n = argc > 1 ? std::atoi(argv[1]) : 10;
+    int vd_tam = argc >= 2 ? std::atoi(argv[1]) : 1000;
+    int rondas = argc >= 3 ? std::atoi(argv[2]) : 15;
 
     VD vd;
 
@@ -95,11 +195,27 @@ int main(int argc, char** argv)
     std::default_random_engine gen(r());
     std::uniform_real_distribution<K::FT> dis(-1, 1);
 
-    for (int a = 0; a < n; ++a) {
+    for (int a = 0; a < vd_tam; ++a) {
         vd.insert(TPoint2(dis(gen), dis(gen)));
     }
 
-	int pos_max = get_faces_areas(vd.faces_begin(), vd.faces_end());
+    Centros centros{
+        get_greatest_face_area(vd.faces_begin(), vd.faces_end())
+    };
+
+    std::cout << "inicial: " << std::endl;
+    centros.print();
+
+    for (int a = 0 ; a < rondas ; a++) {
+        centros.siguiente_nivel();
+        centros.print();
+        std::cout << "size: " << centros.size() << std::endl;
+
+        if (!centros.change()) {
+            std::cout << "no mas cambios. " << a << " rondas." << std::endl;
+            break;
+        }
+    }
 
     return 0;
 }
