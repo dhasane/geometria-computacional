@@ -102,12 +102,12 @@ Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_itera
     return fh;
 }
 
-class Centros{
-    std::set<Face_handle> centros;
-    std::vector<Face_handle> nuevos;
+class IncFaces{
+    std::set<Face_handle> caras;
+    std::vector<Face_handle> borde;
 
     bool present(Face_handle fh) {
-        return this->centros.find(fh) != this->centros.end();
+        return this->caras.find(fh) != this->caras.end();
     }
 
     Face_handle get_cont_face(Halfedge_handle &he) {
@@ -115,13 +115,13 @@ class Centros{
     };
 
     void merge() {
-        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
-            this->centros.insert(*i);
+        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
+            this->caras.insert(*i);
         }
     }
 
     void replace_new(std::vector<Face_handle> new_faces) {
-        this->nuevos = new_faces;
+        this->borde = new_faces;
     }
 
     TPoint2 face_to_point(Face_handle fh) {
@@ -131,14 +131,14 @@ class Centros{
 
 public:
 
-    Centros(Face_handle initial_face) {
-        this->centros.insert(initial_face);
-        this->nuevos.push_back(initial_face);
+    IncFaces(Face_handle initial_face) {
+        this->caras.insert(initial_face);
+        this->borde.push_back(initial_face);
     }
 
     void siguiente_nivel() {
         std::vector<Face_handle> new_faces;
-        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
+        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
             Face_handle f = *i;
 
             Halfedge_handle he = f->halfedge();
@@ -152,7 +152,7 @@ public:
                     new_faces.push_back(fh);
 
                     // para evitar volver a revisar valores que esten entre los nuevos
-                    this->centros.insert(fh);
+                    this->caras.insert(fh);
                 }
                 // de lo contrario, no se hace nada
                 he = he->next();
@@ -164,21 +164,21 @@ public:
 
     bool change() {
         // si los nuevos estan vacios, significa que en la ultima ronda no hubo cambio
-        return !this->nuevos.empty();
+        return !this->borde.empty();
     }
 
     double size() {
-        return this->centros.size();
+        return this->caras.size();
     }
 
     void print() {
         // esto imprime los centroides de las caras
         std::cout << "centros:" << std::endl;
-        for (auto i = this->centros.begin(); i != this->centros.end(); i++) {
+        for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
             std::cout << "- " << this->face_to_point(*i) << std::endl;
         }
         std::cout << "nuevos:" << std::endl;
-        for (auto i = this->nuevos.begin(); i != this->nuevos.end(); i++) {
+        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
             std::cout << "- " << this->face_to_point(*i) << std::endl;
         }
     }
@@ -199,19 +199,19 @@ int main(int argc, char** argv)
         vd.insert(TPoint2(dis(gen), dis(gen)));
     }
 
-    Centros centros{
+    IncFaces inc_caras{
         get_greatest_face_area(vd.faces_begin(), vd.faces_end())
     };
 
     std::cout << "inicial: " << std::endl;
-    centros.print();
+    inc_caras.print();
 
     for (int a = 0 ; a < rondas ; a++) {
-        centros.siguiente_nivel();
-        centros.print();
-        std::cout << "size: " << centros.size() << std::endl;
+        inc_caras.siguiente_nivel();
+        inc_caras.print();
+        std::cout << "size: " << inc_caras.size() << std::endl;
 
-        if (!centros.change()) {
+        if (!inc_caras.change()) {
             std::cout << "no mas cambios. " << a << " rondas." << std::endl;
             break;
         }
