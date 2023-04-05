@@ -1,0 +1,36 @@
+* Taller triangulacion
+** integrantes
+- Daniel Hamilton-Smith
+** ejecucion
+*** compilar
+crear carpeta build
+#+begin_src sh
+mkdir build
+#+end_src
+
+correr cmake y make
+#+begin_src sh
+cd mkdir ; cmake .. ; make ; cd -
+#+end_src
+*** ejecutar
+el proyecto se ejecuta como
+#+begin_src sh
+./voronoi <numero aristas> <numero iteraciones>
+#+end_src
+
+numero aristas: numero de aristas a agregar al diagrama de voronoi
+numero iteraciones: numero de iteraciones en las que se encontrará el siguiente conjunto de caras adjacentes
+** algoritmo
+pasos preparación:
+- Se toma la cara con mayor area
+  - Se utiliza green para encontrar esta area
+  - En caso de que una cara contenga el punto infinito, el area es definida como 0
+- Esta cara se agrega a un conjunto de caras CARAS, este representa el total de caras.
+- Adicionalmente se agrega a otro conjunto de caras BORDE, la cual representa las caras que se encuentran en el borde.
+
+pasos algoritmo:
+- Se toman todas las caras que se encuentren en BORDE y se encuentran todas las caras adyacentes de estas.
+  - mientras que estas no se encuentren dentro de CARAS, se agregan a CARAS y a una lista NUEVO_BORDE
+- Al revisar todas las caras dentro de BORDE, BORDE es reemplazado con NUEVO_BORDE
+- Esto se repite n veces.
+  - En caso de no haber agregado elementos a BORDE, significa que la totalidad de las caras en el diagrama de voronoi se encuentran dentro de CARAS. Se puede detener el algoritmo.
