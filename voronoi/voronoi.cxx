@@ -103,21 +103,36 @@ Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_itera
 }
 
 class IncFaces{
-    std::set<Face_handle> caras;
+    std::vector<std::set<Face_handle>> caras;
     std::vector<Face_handle> borde;
 
+    std::set<Face_handle>* get_last_level() {
+        return &this->caras.back();
+    }
+
+    std::set<Face_handle>* get_prev_last_level() {
+        return &this->caras[this->caras.size() - 2];
+    }
+
     bool present(Face_handle fh) {
-        return this->caras.find(fh) != this->caras.end();
+        // solo es necesario revisar en los ultimos dos niveles
+        auto face_set = this->get_last_level();
+        auto prev_face_set = this->get_prev_last_level();
+        return face_set->find(fh) != face_set->end()
+            && prev_face_set->find(fh) != prev_face_set->end();
     }
 
     Face_handle get_cont_face(Halfedge_handle &he) {
         return he->opposite()->face();
     };
 
-    void merge() {
-        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
-            this->caras.insert(*i);
-        }
+    void insert(Face_handle fh) {
+        this->get_last_level()->insert(fh);
+    }
+
+    void new_level() {
+        // se agrega un nuevo nivel vacio
+        this->caras.push_back(std::set<Face_handle>());
     }
 
     void replace_new(std::vector<Face_handle> new_faces) {
@@ -132,11 +147,13 @@ class IncFaces{
 public:
 
     IncFaces(Face_handle initial_face) {
-        this->caras.insert(initial_face);
+        this->new_level();
+        this->insert(initial_face);
         this->borde.push_back(initial_face);
     }
 
     void siguiente_nivel() {
+        this->new_level();
         std::vector<Face_handle> new_faces;
         for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
             Face_handle f = *i;
@@ -152,7 +169,7 @@ public:
                     new_faces.push_back(fh);
 
                     // para evitar volver a revisar valores que esten entre los nuevos
-                    this->caras.insert(fh);
+                    this->insert(fh);
                 }
                 // de lo contrario, no se hace nada
                 he = he->next();
@@ -174,8 +191,12 @@ public:
     void print() {
         // esto imprime los centroides de las caras
         std::cout << "centros:" << std::endl;
+        int a = 0;
         for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
-            std::cout << "- " << this->face_to_point(*i) << std::endl;
+            for (auto j = i->begin(); j != i->end(); j++) {
+                std::cout << a << " - " << this->face_to_point(*j) << std::endl;
+            }
+            a++;
         }
         std::cout << "nuevos:" << std::endl;
         for (auto i = this->borde.begin(); i != this->borde.end(); i++) {

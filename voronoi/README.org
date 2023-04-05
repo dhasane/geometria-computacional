@@ -34,3 +34,8 @@ pasos algoritmo:
 - Al revisar todas las caras dentro de BORDE, BORDE es reemplazado con NUEVO_BORDE
 - Esto se repite n veces.
   - En caso de no haber agregado elementos a BORDE, significa que la totalidad de las caras en el diagrama de voronoi se encuentran dentro de CARAS. Se puede detener el algoritmo.
+
+optimizacion:
+- CARAS puede ser una lista de conjuntos. Cada uno de estos conjuntos representa un nivel adicional que se ha agregado al total.
+- Esto ayuda a que no se tenga que revisar la totalidad de las caras, sino que solo se revisen las ultimas dos iteraciones (la actual y la anterior).
+- Además relaciona entre la cara y la iteracion en la que fue agregada
