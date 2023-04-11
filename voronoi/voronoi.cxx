@@ -11,6 +11,8 @@
 #include <CGAL/Delaunay_triangulation_adaptation_policies_2.h>
 #include <CGAL/draw_triangulation_2.h>
 
+#include <CGAL/draw_voronoi_diagram_2.h>
+
 using K  = CGAL::Exact_predicates_inexact_constructions_kernel;
 using DT = CGAL::Delaunay_triangulation_2<K>;
 using AT = CGAL::Delaunay_triangulation_adaptation_traits_2<DT>;
@@ -66,25 +68,6 @@ double calculate_face_area (Face &a) {
     return 0;
 };
 
-int get_faces_areas(VD::Face_iterator faces_begin, VD::Face_iterator faces_end) {
-    int pos_max = 0;
-    double max_area = 0;
-
-    int pos = 0;
-    for (auto it = faces_begin; it != faces_end; it++) {
-        double area = calculate_face_area(*it);
-        std::cout << pos << ": " << area << std::endl;
-        if (max_area < area) {
-            max_area = area;
-            pos_max = pos;
-        }
-        pos++;
-    }
-
-    std::cout << "max area: " << max_area << " pos: " << pos << std::endl;
-    return pos_max;
-}
-
 Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_iterator faces_end) {
     Face_handle fh;
     double max_area = 0;
@@ -99,88 +82,129 @@ Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_itera
     }
 
     std::cout << "max area: " << max_area << " pos: [" << *fh->dual() << "]" << std::endl;
+
+	// if area is 0, return first
+	if (max_area == 0)
+		return faces_begin;
+
     return fh;
 }
 
-class IncFaces{
-    std::set<Face_handle> caras;
-    std::vector<Face_handle> borde;
+struct Utils{
+	static bool present_in_set(std::set<Face_handle> *set, Face_handle val) {
+		return set->find(val) != set->end();
+	}
 
-    bool present(Face_handle fh) {
-        return this->caras.find(fh) != this->caras.end();
-    }
-
-    Face_handle get_cont_face(Halfedge_handle &he) {
+    static Face_handle get_cont_face(Halfedge_handle &he) {
         return he->opposite()->face();
     };
 
-    void merge() {
-        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
-            this->caras.insert(*i);
-        }
-    }
-
-    void replace_new(std::vector<Face_handle> new_faces) {
-        this->borde = new_faces;
-    }
-
-    TPoint2 face_to_point(Face_handle fh) {
-        // a delaunay
+    static TPoint2 face_to_point(Face_handle fh) {
         return fh->dual()->point();
+    }
+
+	static void print_set(std::set<Face_handle> &set) {
+		for (auto j = set.begin(); j != set.end(); j++) {
+			std::cout << " - " << Utils::face_to_point(*j) << std::endl;
+		}
+	}
+};
+
+class IncFaces{
+    std::vector<std::set<Face_handle>> caras;
+
+    std::set<Face_handle>* get_last_level(int prev=1) {
+		int pos = this->caras.size() - prev;
+		if (pos < 0) {
+			return &this->caras[0];
+		}
+
+        return &this->caras[this->caras.size() - prev];
+    }
+
+    void new_level(std::set<Face_handle> borde) {
+        // se agrega un nuevo nivel
+        this->caras.push_back(borde);
     }
 
 public:
 
     IncFaces(Face_handle initial_face) {
-        this->caras.insert(initial_face);
-        this->borde.push_back(initial_face);
+        this->new_level(std::set<Face_handle> {initial_face});
     }
 
     void siguiente_nivel() {
-        std::vector<Face_handle> new_faces;
-        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
+        std::set<Face_handle> new_faces;
+
+		auto last_level = this->get_last_level();
+		auto prev_last_level = this->get_last_level(2);
+
+        std::set<Face_handle> old_faces;
+		old_faces.insert(last_level->begin(), last_level->end());
+		old_faces.insert(prev_last_level->begin(), prev_last_level->end());
+
+		auto borde = this->get_last_level();
+		// std::cout << "borde " << this->level() << std::endl;
+		// Utils::print_set(*borde);
+		// std::cout << "fin borde" << std::endl;
+
+        for (auto i = borde->begin(); i != borde->end(); i++) {
             Face_handle f = *i;
 
             Halfedge_handle he = f->halfedge();
             // para cada arista
-            while (he->next() != f->halfedge()) {
-                Face_handle fh = get_cont_face(he);
+            do {
+                Face_handle fh = Utils::get_cont_face(he);
                 // revisar cada cara contraria, que no esté en
                 // Centros.centros
-                if (!this->present(fh)) {
+                if (!Utils::present_in_set(&old_faces, fh)
+					&& !Utils::present_in_set(&new_faces, fh)) {
                     // si no esta, se agrega a Centros.nuevos
-                    new_faces.push_back(fh);
-
-                    // para evitar volver a revisar valores que esten entre los nuevos
-                    this->caras.insert(fh);
+                    new_faces.insert(fh);
                 }
-                // de lo contrario, no se hace nada
+
                 he = he->next();
-            }
+            } while (he != f->halfedge());
         }
+
+		// std::cout << "nuevos valores " << this->level() << std::endl;
+		// Utils::print_set(new_faces);
+		// std::cout << "fin nuevos valores " << this->level() << std::endl;
+
+
         // valor cambian Centros.nuevos por los nuevos encontrados
-        this->replace_new(new_faces);
+        this->new_level(new_faces);
     }
 
     bool change() {
         // si los nuevos estan vacios, significa que en la ultima ronda no hubo cambio
-        return !this->borde.empty();
+        return !this->get_last_level()->empty();
+    }
+
+    double level() {
+        return this->caras.size();
     }
 
     double size() {
-        return this->caras.size();
+		double tam = 0;
+        for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
+			tam += i->size();
+        }
+        return tam;
     }
 
     void print() {
         // esto imprime los centroides de las caras
         std::cout << "caras:" << std::endl;
+        int a = 0;
+		double tam = 0;
         for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
-            std::cout << "- " << this->face_to_point(*i) << std::endl;
+			std::cout << a << std::endl;
+			Utils::print_set(*i);
+            a++;
+			tam += i->size();
         }
-        std::cout << "borde:" << std::endl;
-        for (auto i = this->borde.begin(); i != this->borde.end(); i++) {
-            std::cout << "- " << this->face_to_point(*i) << std::endl;
-        }
+		std::cout << "Contiene " << tam << " caras despues de " << this->level() << " rondas" << std::endl;
     }
 };
 
@@ -196,7 +220,7 @@ int main(int argc, char** argv)
     std::uniform_real_distribution<K::FT> dis(-1, 1);
 
     for (int a = 0; a < vd_tam; ++a) {
-        vd.insert(TPoint2(dis(gen), dis(gen)));
+        vd.insert(TPoint2(dis(gen) * 10, dis(gen) * 10));
     }
 
     IncFaces inc_caras{
@@ -208,14 +232,16 @@ int main(int argc, char** argv)
 
     for (int a = 0 ; a < rondas ; a++) {
         inc_caras.siguiente_nivel();
-        inc_caras.print();
-        std::cout << "size: " << inc_caras.size() << std::endl;
 
         if (!inc_caras.change()) {
             std::cout << "no mas cambios. " << a << " rondas." << std::endl;
             break;
         }
     }
+
+	inc_caras.print();
+
+	CGAL::draw(vd);
 
     return 0;
 }
