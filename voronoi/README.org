@@ -1,4 +1,4 @@
-* Taller triangulacion
+* Taller Voronoi
 ** integrantes
 - Daniel Hamilton-Smith
 ** ejecucion
