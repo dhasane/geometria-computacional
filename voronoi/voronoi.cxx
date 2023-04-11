@@ -42,7 +42,7 @@ double area_green(std::vector<TPoint2>::iterator start, std::vector<TPoint2>::it
         area += ( ( x * yd ) - ( y * xd ) );
     }
 
-	area += ( ( (end-move)->x() * start->y() ) - ( (end-move)->y() * start->x() ) );
+    area += ( ( (end-move)->x() * start->y() ) - ( (end-move)->y() * start->x() ) );
 
     return area / 2;
 }
@@ -83,17 +83,17 @@ Face_handle get_greatest_face_area(VD::Face_iterator faces_begin, VD::Face_itera
 
     std::cout << "max area: " << max_area << " pos: [" << *fh->dual() << "]" << std::endl;
 
-	// if area is 0, return first
-	if (max_area == 0)
-		return faces_begin;
+    // if area is 0, return first
+    if (max_area == 0)
+        return faces_begin;
 
     return fh;
 }
 
 struct Utils{
-	static bool present_in_set(std::set<Face_handle> *set, Face_handle val) {
-		return set->find(val) != set->end();
-	}
+    static bool present_in_set(std::set<Face_handle> *set, Face_handle val) {
+        return set->find(val) != set->end();
+    }
 
     static Face_handle get_cont_face(Halfedge_handle &he) {
         return he->opposite()->face();
@@ -103,21 +103,21 @@ struct Utils{
         return fh->dual()->point();
     }
 
-	static void print_set(std::set<Face_handle> &set) {
-		for (auto j = set.begin(); j != set.end(); j++) {
-			std::cout << " - " << Utils::face_to_point(*j) << std::endl;
-		}
-	}
+    static void print_set(std::set<Face_handle> &set) {
+        for (auto j = set.begin(); j != set.end(); j++) {
+            std::cout << " - " << Utils::face_to_point(*j) << std::endl;
+        }
+    }
 };
 
 class IncFaces{
     std::vector<std::set<Face_handle>> caras;
 
     std::set<Face_handle>* get_last_level(int prev=1) {
-		int pos = this->caras.size() - prev;
-		if (pos < 0) {
-			return &this->caras[0];
-		}
+        int pos = this->caras.size() - prev;
+        if (pos < 0) {
+            return &this->caras[0];
+        }
 
         return &this->caras[this->caras.size() - prev];
     }
@@ -136,17 +136,17 @@ public:
     void siguiente_nivel() {
         std::set<Face_handle> new_faces;
 
-		auto last_level = this->get_last_level();
-		auto prev_last_level = this->get_last_level(2);
+        auto last_level = this->get_last_level();
+        auto prev_last_level = this->get_last_level(2);
 
         std::set<Face_handle> old_faces;
-		old_faces.insert(last_level->begin(), last_level->end());
-		old_faces.insert(prev_last_level->begin(), prev_last_level->end());
+        old_faces.insert(last_level->begin(), last_level->end());
+        old_faces.insert(prev_last_level->begin(), prev_last_level->end());
 
-		auto borde = this->get_last_level();
-		// std::cout << "borde " << this->level() << std::endl;
-		// Utils::print_set(*borde);
-		// std::cout << "fin borde" << std::endl;
+        auto borde = this->get_last_level();
+        // std::cout << "borde " << this->level() << std::endl;
+        // Utils::print_set(*borde);
+        // std::cout << "fin borde" << std::endl;
 
         for (auto i = borde->begin(); i != borde->end(); i++) {
             Face_handle f = *i;
@@ -158,7 +158,7 @@ public:
                 // revisar cada cara contraria, que no esté en
                 // Centros.centros
                 if (!Utils::present_in_set(&old_faces, fh)
-					&& !Utils::present_in_set(&new_faces, fh)) {
+                    && !Utils::present_in_set(&new_faces, fh)) {
                     // si no esta, se agrega a Centros.nuevos
                     new_faces.insert(fh);
                 }
@@ -167,9 +167,9 @@ public:
             } while (he != f->halfedge());
         }
 
-		// std::cout << "nuevos valores " << this->level() << std::endl;
-		// Utils::print_set(new_faces);
-		// std::cout << "fin nuevos valores " << this->level() << std::endl;
+        // std::cout << "nuevos valores " << this->level() << std::endl;
+        // Utils::print_set(new_faces);
+        // std::cout << "fin nuevos valores " << this->level() << std::endl;
 
 
         // valor cambian Centros.nuevos por los nuevos encontrados
@@ -186,9 +186,9 @@ public:
     }
 
     double size() {
-		double tam = 0;
+        double tam = 0;
         for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
-			tam += i->size();
+            tam += i->size();
         }
         return tam;
     }
@@ -197,14 +197,14 @@ public:
         // esto imprime los centroides de las caras
         std::cout << "caras:" << std::endl;
         int a = 0;
-		double tam = 0;
+        double tam = 0;
         for (auto i = this->caras.begin(); i != this->caras.end(); i++) {
-			std::cout << a << std::endl;
-			Utils::print_set(*i);
+            std::cout << a << std::endl;
+            Utils::print_set(*i);
             a++;
-			tam += i->size();
+            tam += i->size();
         }
-		std::cout << "Contiene " << tam << " caras despues de " << this->level() << " rondas" << std::endl;
+        std::cout << "Contiene " << tam << " caras despues de " << this->level() << " rondas" << std::endl;
     }
 };
 
@@ -239,9 +239,9 @@ int main(int argc, char** argv)
         }
     }
 
-	inc_caras.print();
+    inc_caras.print();
 
-	CGAL::draw(vd);
+    CGAL::draw(vd);
 
     return 0;
 }
