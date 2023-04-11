@@ -37,5 +37,6 @@ pasos algoritmo:
 
 optimizacion:
 - CARAS puede ser una lista de conjuntos. Cada uno de estos conjuntos representa un nivel adicional que se ha agregado al total.
-- Esto ayuda a que no se tenga que revisar la totalidad de las caras, sino que solo se revisen las ultimas dos iteraciones (la actual y la anterior).
-- Además relaciona entre la cara y la iteracion en la que fue agregada
+- Esto ayuda a que no se tenga que revisar la totalidad de las caras, sino que solo se revisen las ultimas dos iteraciones (la actual y la anterior). La actual, que representa el borde (ultimo nivel), solo tendra contacto con el nivel anterior y con el nivel siguiente, el cual contendrá las nuevas caras.
+  - Nuevos elementos solo se agregan a una lista de nuevas caras, si no están en esa misma lista y si no se encuentran en las dos iteraciones previas.
+- Además este método permite relacionar entre la cara y la iteracion en la que fue agregada.
