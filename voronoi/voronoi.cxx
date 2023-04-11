@@ -232,7 +232,6 @@ int main(int argc, char** argv)
 
     for (int a = 0 ; a < rondas ; a++) {
         inc_caras.siguiente_nivel();
-        // std::cout << "size: " << inc_caras.size() << std::endl;
 
         if (!inc_caras.change()) {
             std::cout << "no mas cambios. " << a << " rondas." << std::endl;
