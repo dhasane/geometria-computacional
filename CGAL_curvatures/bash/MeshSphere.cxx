@@ -129,7 +129,7 @@ private:
         	typename TMesh::Vertex_index prev_vertex = *std::next(fit, -1);
 
 			// TODO aqui hay un error
-			add_face(pt, prev_vertex, *fit);
+			add_face(prev_vertex, *fit, pt);
         }
 
 		std::cout << " pre remove ";
