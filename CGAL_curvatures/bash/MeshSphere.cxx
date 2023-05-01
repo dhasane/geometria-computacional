@@ -118,22 +118,26 @@ private:
     }
 
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
-        CGAL::Vertex_around_face_iterator<TMesh> vbegin, vend;
-        boost::tie(vbegin, vend) = vertices_around_face(tm->halfedge(face), *tm);
+		typename TMesh::Vertex_around_face_iterator vbegin, vend;
+        boost::tie(vbegin, vend) = tm->vertices_around_face(tm->halfedge(face));
+
         auto fit = vbegin++;
 
-		std::cout << " pre add ";
-		print_all_faces();
+        std::cout << " pre add ";
+        print_all_faces();
         for (; fit != vend; ++fit) {
+        	typename TMesh::Vertex_index prev_vertex = *std::next(fit, -1);
+
 			// TODO aqui hay un error
-			add_face(pt, *std::next(fit, -1), *fit);
+			add_face(prev_vertex, *fit, pt);
         }
 
-                std::cout << " pre remove ";
+		std::cout << " pre remove ";
 		print_all_faces();
 
-		m.erase(face);
-        tm->remove_face(face);
+		//m.erase(face);
+	    tm->remove_face(face);
+       // tm->remove_face(face);
 		std::cout << "face removed from map " << face << std::endl;
 		print_all_faces();
     }
