@@ -120,14 +120,25 @@ private:
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
         CGAL::Vertex_around_face_iterator<TMesh> vbegin, vend;
         boost::tie(vbegin, vend) = vertices_around_face(tm->halfedge(face), *tm);
-        auto fit = vbegin++;
+	
+	Tmesh::vertex_index first_vertex, prev_vertex;
+	   first_vertex = prev_vertex = *vbegin;
+	    ++vbegin:
+	    std::cout<< "pre add ";
+	    print_all_faces();
+	    for(; vbegin != vend; ++vbegin) {
+	    	add_face(pt,prev_vertex, *vbegin);
+		prev_vertex = *vbegin;
+	    }
+	    add_face(pt, prev_vertex, first_vertex);
+        //auto fit = vbegin++;
 
-		std::cout << " pre add ";
-		print_all_faces();
-        for (; fit != vend; ++fit) {
+	//	std::cout << " pre add ";
+	//	print_all_faces();
+      //  for (; fit != vend; ++fit) {
 			// TODO aqui hay un error
-			add_face(pt, *std::next(fit, -1), *fit);
-        }
+	//		add_face(pt, *std::next(fit, -1), *fit);
+       // }
 
                 std::cout << " pre remove ";
 		print_all_faces();
