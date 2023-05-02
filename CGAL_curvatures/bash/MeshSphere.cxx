@@ -127,13 +127,12 @@ private:
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
 		typename TMesh::Vertex_around_face_iterator vbegin, vend;
         boost::tie(vbegin, vend) = tm->vertices_around_face(tm->halfedge(face));
-        auto fit = vbegin;
 
 		print_all_faces();
 		std::cout << "starting face replacement" << std::endl;
 	    tm->remove_face(face);
 
-        for (; fit != vend; ++fit) {
+        for (auto fit = vbegin; fit != vend; ++fit) {
         	typename TMesh::Vertex_index prev_vertex =
 				*std::next(fit == vbegin ? vend : fit, -1);
 
