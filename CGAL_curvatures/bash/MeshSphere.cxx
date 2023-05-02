@@ -137,9 +137,17 @@ private:
 	}
 
 	void remove_face(TMesh::face_index fi) {
-		std::cout << "Face removed: " << fi << std::endl;
+		//Valida que este en la malla antes de eliminar (no creo que sea la solucion completa)
+		if (!tm->is_valid(fi)){
+		std:: << "Face index INVALIDO" << std::endl;
+		return;
+		}
+		std::cout << "Face removes: " << fi << std::endl;
 		tm->remove_face(fi);
 		tm->collect_garbage();
+		//std::cout << "Face removed: " << fi << std::endl;
+		//tm->remove_face(fi);
+		//tm->collect_garbage();
 	}
 
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
