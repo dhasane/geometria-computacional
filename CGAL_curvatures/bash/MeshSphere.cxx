@@ -31,8 +31,14 @@ public:
 	}
 
     void get_topologia(std::vector<TMesh::vertex_index> puntos) {
-        add_face(puntos[2], puntos[1], puntos[0]);
+        // auto b = add_face(puntos[2], puntos[1], puntos[0]);
+		// remove_face(b);
+
         add_face(puntos[0], puntos[1], puntos[2]);
+
+        add_face(puntos[3], puntos[2], puntos[1]);
+
+		return ;
 
         for (int a = 3; a < puntos.size(); a++) {
 			std::cout << "started with " << a << std::endl;
@@ -82,7 +88,12 @@ private:
 			// en caso de que la cara aun no este presente en el mapa
 			// evitar calcular esto multiples veces
 			TMesh::Face_index fi = tm->face(hf);
-			if (m.count(fi) == 0) {
+
+			// TODO: cambie esto a true siempre, porque hay una posibilidad de que
+			// al llamar collect_garbage, los indices cambien,
+			// seria mejor usar los puntos como llave
+			// algo como str(x)+str(y)+str(z)
+			if (true || m.count(fi) == 0) {
 				double x;
 				double y;
 				double z;
@@ -108,9 +119,9 @@ private:
 		return min_face_index;
     }
 
-	void add_face(TMesh::vertex_index p1,
-				  TMesh::vertex_index p2,
-				  TMesh::vertex_index p3) {
+	TMesh::face_index add_face(TMesh::vertex_index p1,
+							   TMesh::vertex_index p2,
+							   TMesh::vertex_index p3) {
 		TMesh::face_index f = tm->add_face(p1, p2, p3);
 		if(f == TMesh::null_face())
 		{
@@ -118,10 +129,17 @@ private:
 			f = tm->add_face(p1, p3, p2);
 			assert(f != TMesh::null_face());
 		}
-		std::cerr<<"Face added"<<std::endl;
+		std::cerr<<"Face added " << p1 << ", " << p2 << ", " << p3 << " : " << f <<std::endl;
 		// assert (f != TMesh::null_face());
 		// std::cout << "face added" << std::endl;
 		// print_all_faces();
+		return f;
+	}
+
+	void remove_face(TMesh::face_index fi) {
+		std::cout << "Face removed: " << fi << std::endl;
+		tm->remove_face(fi);
+		tm->collect_garbage();
 	}
 
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
@@ -130,7 +148,7 @@ private:
 
 		print_all_faces();
 		std::cout << "starting face replacement" << std::endl;
-	    tm->remove_face(face);
+	    remove_face(face);
 
         for (auto fit = vbegin; fit != vend; ++fit) {
         	typename TMesh::Vertex_index prev_vertex =
