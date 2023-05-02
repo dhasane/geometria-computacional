@@ -30,21 +30,6 @@ public:
 		this->tm = m;
 	}
 
-	TMesh::face_index add_face(TMesh::vertex_index p1,
-							   TMesh::vertex_index p2,
-							   TMesh::vertex_index p3) {
-		bool valid1 = tm->has_valid_index(p1);
-		bool valid2 = tm->has_valid_index(p2);
-		bool valid3 = tm->has_valid_index(p3);
-		std::cout << "adding: " << std::endl
-				  << "\t" << p3 << " is valid " << valid1 << std::endl
-				  << "\t" << p2 << " is valid " << valid2 << std::endl
-				  << "\t" << p1 << " is valid " << valid3 << std::endl;
-		TMesh::face_index f = tm->add_face(p1, p2, p3);
-		assert(f != TMesh::null_face());
-		return f;
-	}
-
     void get_topologia(std::vector<TMesh::vertex_index> puntos) {
         add_face(puntos[2], puntos[1], puntos[0]);
         add_face(puntos[0], puntos[1], puntos[2]);
@@ -62,11 +47,20 @@ public:
 
 	void print_all_faces() {
         TMesh::face_iterator vb, ve;
-		std::cout << " all faces : " << std::endl;
+		std::cout << "all faces : " ;
         for (boost::tie(vb, ve) = faces(*tm); vb != ve; ++vb) {
 			TMesh::Halfedge_index hf = tm->halfedge(*vb);
 			TMesh::Face_index fi = tm->face(hf);
 			std::cout << fi << " ";
+			std::cout << "(";
+
+			typename TMesh::Vertex_around_face_iterator vbegin, vend;
+			boost::tie(vbegin, vend) = tm->vertices_around_face(tm->halfedge(fi));
+			for (; vbegin != vend; ++vbegin) {
+				std::cout << *vbegin << ", ";
+			}
+
+			std::cout << ") ";
         }
 		std::cout << std::endl;
 	}
@@ -83,9 +77,6 @@ private:
 		bool first = true;
 
         for (boost::tie(vb, ve) = faces(*tm); vb != ve; ++vb) {
-            // TMesh::Face_index face_index = tm.face(tm.halfedge(*vb));
-            // tm.face(face);
-
 			TMesh::Halfedge_index hf = tm->halfedge(*vb);
 
 			// en caso de que la cara aun no este presente en el mapa
@@ -117,31 +108,42 @@ private:
 		return min_face_index;
     }
 
+	void add_face(TMesh::vertex_index p1,
+				  TMesh::vertex_index p2,
+				  TMesh::vertex_index p3) {
+		TMesh::face_index f = tm->add_face(p1, p2, p3);
+		if(f == TMesh::null_face())
+		{
+			std::cerr<<"The face could not be added because of an orientation error."<<std::endl;
+			f = tm->add_face(p1, p3, p2);
+			assert(f != TMesh::null_face());
+		}
+		std::cerr<<"Face added"<<std::endl;
+		// assert (f != TMesh::null_face());
+		// std::cout << "face added" << std::endl;
+		// print_all_faces();
+	}
+
     void replace_face(TMesh::face_index face, TMesh::vertex_index pt) {
 		typename TMesh::Vertex_around_face_iterator vbegin, vend;
         boost::tie(vbegin, vend) = tm->vertices_around_face(tm->halfedge(face));
+        auto fit = vbegin;
 
-        auto fit = vbegin++;
+		print_all_faces();
+		std::cout << "starting face replacement" << std::endl;
+	    tm->remove_face(face);
 
-        std::cout << " pre add ";
-        print_all_faces();
         for (; fit != vend; ++fit) {
-        	typename TMesh::Vertex_index prev_vertex = *std::next(fit, -1);
+        	typename TMesh::Vertex_index prev_vertex =
+				*std::next(fit == vbegin ? vend : fit, -1);
 
 			// TODO aqui hay un error
-			add_face(prev_vertex, *fit, pt);
+			std::cout << prev_vertex << " " << *fit << std::endl;
+			add_face(pt, prev_vertex, *fit);
         }
-
-		std::cout << " pre remove ";
-		print_all_faces();
-
-		//m.erase(face);
-	    tm->remove_face(face);
-       // tm->remove_face(face);
 		std::cout << "face removed from map " << face << std::endl;
 		print_all_faces();
     }
-
 };
 
 // -------------------------------------------------------------------------
