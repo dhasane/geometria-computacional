@@ -1,0 +1,36 @@
+* Taller triangulacion
+** integrantes
+- Daniel Hamilton-Smith
+- Agustin Santiago Salazar Millan
+** ejecucion
+*** compilar
+crear carpeta build
+#+begin_src sh
+mkdir build
+#+end_src
+
+correr cmake y make
+#+begin_src sh
+mkdir -p build; cd build ; cmake .. ; make ; cd -
+#+end_src
+*** ejecutar
+desde la carpeta build, el proyecto se ejecuta como
+#+begin_src sh
+./CompGeom_MeshSphere
+#+end_src
+
+este genera un mesh.obj el cual contiene la figura generada
+** algoritmo
+En cierta forma, se puede pensar como si se estuviera "inflando" la figura cada vez que entra un nuevo punto
+
+- Se toman los primeros 3 puntos
+- A partir de estos 3 puntos se crean dos caras p1, p2, p3 y p3, p2, p1
+- Para todos los demas puntos despues del tercero
+  - Encontrar el "centro" de la cara mas cercano (centro se encuentra haciendo la sumatoria de todos los puntos de la cara)
+  - Se selecciona la cara mas cercana
+  - Inicio cambio cara
+    - se toman los vertices del borde de la cara mas cercana
+    - se elimina la cara
+    - se crean nuevas caras entre el punto y el borde previo
+  - Fin cambio cara
+- Fin ciclo sobre puntos
