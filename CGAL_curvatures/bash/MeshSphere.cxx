@@ -31,14 +31,8 @@ public:
 	}
 
     void get_topologia(std::vector<TMesh::vertex_index> puntos) {
-        // auto b = add_face(puntos[2], puntos[1], puntos[0]);
-		// remove_face(b);
-
+		add_face(puntos[2], puntos[1], puntos[0]);
         add_face(puntos[0], puntos[1], puntos[2]);
-
-        add_face(puntos[3], puntos[2], puntos[1]);
-
-		return ;
 
         for (int a = 3; a < puntos.size(); a++) {
 			std::cout << "started with " << a << std::endl;
@@ -47,7 +41,6 @@ public:
 			std::cout << "closest face index " << face << std::endl;
 
             replace_face(face, puntos[a]);
-			return;
         }
     }
 
