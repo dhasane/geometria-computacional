@@ -1,0 +1,2 @@
+* Simplex Mesh
+Implementación de [[https://link.springer.com/article/10.1023/A:1008157432188][General Object Reconstruction Based on Simplex Meshes]]
