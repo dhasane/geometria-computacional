@@ -1,4 +1,5 @@
 #include <CGAL/Distance_2/Line_2_Line_2.h>
+#include <CGAL/Surface_mesh/Surface_mesh.h>
 #include <functional>
 #include <iostream>
 
@@ -11,6 +12,10 @@ using TPoint = TKernel::Point_3;
 using TMesh = CGAL::Surface_mesh< TPoint >;
 using TPoint_ind = TMesh::vertex_index;
 using TFace = TMesh::Face_index;
+
+// <radio circ, centro circ, radio esfera, centro esfera> simplexParams(mesh, vertexHandle) {
+//
+// }
 
 double dot_product(TPoint p1, TPoint p2) {
   return p1.x() * p2.x() + p1.y() * p2.y() + p1.z() * p2.z();
@@ -27,6 +32,13 @@ class Adjacents {
 	TPoint v1;
 	TPoint v2;
 	TPoint v3;
+
+	Adjacents (CGAL::Halfedge he) {
+
+		this->v1 = he;
+		this->v2 = he.prev.opp;
+		this->v3 = he.prev.opp.prev.opp;
+	}
 
 	Adjacents (TPoint cntr, TPoint v1, TPoint v2, TPoint v3) {
 		this->center = cntr;
