@@ -6,6 +6,7 @@
 #include <tuple>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 std::random_device r;
 std::default_random_engine gen{r()};
@@ -88,35 +89,27 @@ public:
 		build();
 	}
 
+	void print_sub_paths(pos p, int depth) {
+		for (int a = 0; a < depth; a++) {
+			std::cout << "-";
+		}
+		std::cout << string_pos(p);
+		if (p == end) {
+			std::cout << " - final " ;
+		}
+		std::cout << std::endl;
+
+		for (auto a : get_room(p)->connected) {
+			print_sub_paths(a, depth + 1);
+		}
+	}
+
 	void print_paths() {
 		std::deque<std::pair<pos, int>> dest;
 
 		std::cout << "start: " << string_pos(start) << std::endl;
 
-		for (auto a : get_room(start)->connected) {
-			dest.push_back({a, 0});
-		}
-
-		while(!dest.empty()) {
-			pos cur;
-			int depth;
-			std::tie(cur, depth) = dest.front(); dest.pop_front();
-
-			for (int a = 0; a < depth ; a++ ) {
-				std::cout << " ";
-			}
-			std::cout << "- " << string_pos(cur) ;
-
-			if (cur == end) {
-				std::cout << " - final " ;
-
-			}
-			std::cout << std::endl;
-
-			for (auto a : get_room(cur)->connected) {
-				dest.push_back({a, depth + 1});
-			}
-		}
+		print_sub_paths(start, 0);
 	}
 
 	void print_potential_rooms () {
@@ -136,6 +129,9 @@ public:
 		while (!potential_rooms.empty()) {
 			pos current;
 			pos prev;
+
+			// std::shuffle( std::begin( potential_rooms ) , std::end( potential_rooms ) , gen );
+
 			std::tie(current, prev) = potential_rooms.front();
 
 			potential_rooms.pop_front();
@@ -154,17 +150,20 @@ public:
 				pos next;
 				std::vector<pos> not_selected;
 
-				if (select_random_room(current, next, not_selected)) {
-					potential_rooms.push_front({next, current});
+                if (select_random_room(current, next, not_selected)) {
+                    potential_rooms.push_front({next, current});
 
-					// std::cout << "next: " << string_pos(next) << std::endl;
-					// std::cout << "not selected: ";
-					// print_rooms(not_selected);
+                    // std::cout << "next: " << string_pos(next) << std::endl;
+                    // std::cout << "not selected: ";
+                    // print_rooms(not_selected);
 
-					for (pos p: not_selected) {
-						potential_rooms.push_back({p, current});
-					}
-				}
+                    for (pos p: not_selected) {
+                        potential_rooms.push_back({p, current});
+                    }
+                }
+                // for (pos p: surrounding(current)) {
+                //  potential_rooms.push_back({p, current});
+                // }
 			}
 		}
 	}
