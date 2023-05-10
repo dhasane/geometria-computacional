@@ -32,16 +32,15 @@ std::string string_pos(pos p) {
 
 class Room {
 	bool filled;
-	std::vector<pos> connected;
 
 public:
+	std::vector<pos> connected;
 	Room() { filled = false; }
 
 	bool is_filled() { return filled; }
 
-	void fill(pos from) {
+	void fill() {
 		filled = true;
-		connect(from);
 	}
 
 	void connect(pos c) {
@@ -89,6 +88,37 @@ public:
 		build();
 	}
 
+	void print_paths() {
+		std::deque<std::pair<pos, int>> dest;
+
+		std::cout << "start: " << string_pos(start) << std::endl;
+
+		for (auto a : get_room(start)->connected) {
+			dest.push_back({a, 0});
+		}
+
+		while(!dest.empty()) {
+			pos cur;
+			int depth;
+			std::tie(cur, depth) = dest.front(); dest.pop_front();
+
+			for (int a = 0; a < depth ; a++ ) {
+				std::cout << " ";
+			}
+			std::cout << "- " << string_pos(cur) ;
+
+			if (cur == end) {
+				std::cout << " - final " ;
+
+			}
+			std::cout << std::endl;
+
+			for (auto a : get_room(cur)->connected) {
+				dest.push_back({a, depth + 1});
+			}
+		}
+	}
+
 	void print_potential_rooms () {
 		std::cout << "rooms: ";
 		for (auto p : potential_rooms) {
@@ -97,9 +127,8 @@ public:
 	}
 
 	void print_rooms (std::vector<pos> rooms) {
-		std::cout << "rooms: ";
-		for (auto p : potential_rooms) {
-			std::cout << string_pos(p.first);
+		for (auto p : rooms) {
+			std::cout << string_pos(p);
 		}
 	}
 
@@ -111,26 +140,42 @@ public:
 
 			potential_rooms.pop_front();
 
-			Room *r = &rooms[get_x(current)][get_y(current)][get_z(current)];
+			Room *r = get_room(current);
 
 			if (!r->is_filled()) {
+				// std::cout << std::endl;
+				// std::cout << std::endl;
 				std::cout << "from " << string_pos(prev) << " to " << string_pos(current) << std::endl;
-				r->fill(prev);
+				if (0 <= get_x(prev)) {
+					get_room(prev)->connect(current);
+				}
+				r->fill();
 
 				pos next;
 				std::vector<pos> not_selected;
 
-				select_random_room(current, next, not_selected);
+				if (select_random_room(current, next, not_selected)) {
+					potential_rooms.push_front({next, current});
 
-				potential_rooms.push_front({next, current});
+					// std::cout << "next: " << string_pos(next) << std::endl;
+					// std::cout << "not selected: ";
+					// print_rooms(not_selected);
 
-				for (pos p: not_selected) {
-					potential_rooms.push_back({p, current});
+					for (pos p: not_selected) {
+						potential_rooms.push_back({p, current});
+					}
 				}
 			}
 		}
 	}
+
 private:
+	Room* get_room(pos p) {
+		int x = get_x(p);
+		int y = get_y(p);
+		int z = get_z(p);
+		return &rooms[x][y][z];
+	}
 
 	bool fill_room(std::vector<pos> &surr, pos from, pos p) {
 		int x = get_x(p);
@@ -165,21 +210,32 @@ private:
 		int z = get_z(p);
 
 		// en caso de encontrar el final, no quiero que tome en cuenta las casillas alrededor
-		if (!fill_room(surr, p, {x + 1, y, z}) &&
-			!fill_room(surr, p, {x - 1, y, z}) &&
-			!fill_room(surr, p, {x, y + 1, z}) &&
-			!fill_room(surr, p, {x, y - 1, z}) &&
-			!fill_room(surr, p, {x, y, z + 1}) &&
-			!fill_room(surr, p, {x, y, z - 1})) {
-			return surr;
+		if (fill_room(surr, p, {x + 1, y, z}) ||
+			fill_room(surr, p, {x - 1, y, z}) ||
+			fill_room(surr, p, {x, y + 1, z}) ||
+			fill_room(surr, p, {x, y - 1, z}) ||
+			fill_room(surr, p, {x, y, z + 1}) ||
+			fill_room(surr, p, {x, y, z - 1})) {
+
+			surr.clear();
+			std::cout << "final encontrado " << string_pos(p) << std::endl;
 		}
-		return (std::vector<pos>) {};
+
+		return surr;
 	}
 
-	void select_random_room(pos current, pos &next, std::vector<pos>& not_selected) {
+	bool select_random_room(pos current, pos &next, std::vector<pos>& not_selected) {
 		std::vector<pos> surr = surrounding(current);
 
+		// std::cout << "posibles: " ;
+		// print_rooms(not_selected);
+		// std::cout << std::endl;
 		// no es lo mas eficiente, pero quiero dejar la idea
+
+		if (surr.empty()) {
+			return false;
+		}
+
 		int sel = get_random(surr.size());
 
 		for (int a = 0; a < surr.size(); a ++) {
@@ -190,6 +246,8 @@ private:
 				not_selected.push_back(surr[a]);
 			}
 		}
+
+		return true;
 	}
 };
 
@@ -200,6 +258,8 @@ int main(int argc, char** argv)
     int t_z = argc >= 2 ? std::atoi(argv[3]) : 20;
 
 	auto l = Labyrinth{t_x, t_y, t_z};
+
+	l.print_paths();
 
     return 0;
 }
