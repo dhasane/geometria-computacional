@@ -1,0 +1,43 @@
+* Taller Voronoi
+** integrantes
+- Daniel Hamilton-Smith
+** ejecucion
+*** compilar
+crear carpeta build
+#+begin_src sh
+mkdir build
+#+end_src
+
+correr cmake y make
+#+begin_src sh
+cd mkdir ; cmake .. ; make ; cd -
+#+end_src
+*** ejecutar
+el proyecto se ejecuta como
+#+begin_src sh
+./voronoi <numero aristas> <numero iteraciones>
+#+end_src
+
+numero aristas: numero de aristas a agregar al diagrama de voronoi
+numero iteraciones: numero de iteraciones en las que se encontrará el siguiente conjunto de caras adjacentes
+** algoritmo
+pasos preparación:
+- Se toma la cara con mayor area
+  - Se utiliza green para encontrar esta area
+  - En caso de que una cara contenga el punto infinito, el area es definida como 0
+- Esta cara se agrega a un conjunto de caras CARAS, este representa el total de caras.
+- Adicionalmente se agrega a otro conjunto de caras BORDE, la cual representa las caras que se encuentran en el borde.
+
+pasos algoritmo:
+- Se toman todas las caras que se encuentren en BORDE y se encuentran todas las caras adyacentes de estas.
+  - mientras que estas no se encuentren dentro de CARAS, se agregan a CARAS y a una lista NUEVO_BORDE
+- Al revisar todas las caras dentro de BORDE, BORDE es reemplazado con NUEVO_BORDE
+- Esto se repite n veces.
+  - En caso de no haber agregado elementos a BORDE, significa que la totalidad de las caras en el diagrama de voronoi se encuentran dentro de CARAS. Se puede detener el algoritmo.
+
+optimizacion:
+- CARAS puede ser una lista de conjuntos. Cada uno de estos conjuntos representa un nivel adicional que se ha agregado al total.
+- Esto ayuda a que no se tenga que revisar la totalidad de las caras, sino que solo se revisen las ultimas dos iteraciones (la actual y la anterior). La actual, que representa el borde (ultimo nivel), solo tendra contacto con el nivel anterior y con el nivel siguiente, el cual contendrá las nuevas caras.
+  - Nuevos elementos se agregan a una lista de nuevas caras unicamente en caso de que: no están en esa misma lista y no se encuentran en las dos iteraciones previas.
+- Además este método permite relacionar entre la cara y la iteracion en la que fue agregada.
+
