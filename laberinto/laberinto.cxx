@@ -220,8 +220,6 @@ public:
 			walls.erase(std::remove_if(walls.begin(), walls.end(), pred), walls.end());
 		}
 
-		// TODO: revisar aqui, que creo que esto se genera mal
-
         return walls;
     }
 
@@ -230,36 +228,35 @@ public:
     }
 
     void wall_x (TMesh& m, Pos& p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : -1;
-        TVertex rv1 = vertex_in_pos(mat, p.add_pos({step,   0,   0}));
-        TVertex rv2 = vertex_in_pos(mat, p.add_pos({step,step,   0}));
-        TVertex rv3 = vertex_in_pos(mat, p.add_pos({step,step,step}));
-        TVertex rv4 = vertex_in_pos(mat, p.add_pos({step,   0,step}));
+        int step = front ? 1 : 0;
+        TVertex rv1 = vertex_in_pos(mat, p.add_pos({step,0,0}));
+        TVertex rv2 = vertex_in_pos(mat, p.add_pos({step,1,0}));
+        TVertex rv3 = vertex_in_pos(mat, p.add_pos({step,1,1}));
+        TVertex rv4 = vertex_in_pos(mat, p.add_pos({step,0,1}));
         // std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
         m.add_face(rv1, rv2, rv3);
-        m.add_face(rv3, rv4, rv1);
+        m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda cara no esta siendo agregada
     };
     void wall_y (TMesh& m, Pos& p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : -1;
-        TVertex rv1 = vertex_in_pos(mat, p.add_pos({   0,step,   0}));
-        TVertex rv2 = vertex_in_pos(mat, p.add_pos({0   ,step,step}));
-        TVertex rv3 = vertex_in_pos(mat, p.add_pos({step,step,step}));
-        TVertex rv4 = vertex_in_pos(mat, p.add_pos({step,step,   0}));
+        int step = front ? 1 : 0;
+        TVertex rv1 = vertex_in_pos(mat, p.add_pos({0,step,0}));
+        TVertex rv2 = vertex_in_pos(mat, p.add_pos({0,step,1}));
+        TVertex rv3 = vertex_in_pos(mat, p.add_pos({1,step,1}));
+        TVertex rv4 = vertex_in_pos(mat, p.add_pos({1,step,0}));
         // std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
         m.add_face(rv1, rv2, rv3);
-        m.add_face(rv3, rv4, rv1);
+        // m.add_face(rv3, rv4, rv1);
     };
     void wall_z (TMesh& m, Pos& p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : -1;
-        auto rv1 = vertex_in_pos(mat, p.add_pos({   0,step,step}));
-        auto rv2 = vertex_in_pos(mat, p.add_pos({step,   0,step}));
-        auto rv3 = vertex_in_pos(mat, p.add_pos({step,step,step}));
-        auto rv4 = vertex_in_pos(mat, p.add_pos({   0,step,step}));
+        int step = front ? 1 : 0;
+        auto rv1 = vertex_in_pos(mat, p.add_pos({0,1,step}));
+        auto rv2 = vertex_in_pos(mat, p.add_pos({1,0,step}));
+        auto rv3 = vertex_in_pos(mat, p.add_pos({1,1,step}));
+        auto rv4 = vertex_in_pos(mat, p.add_pos({0,1,step}));
         // std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
         m.add_face(rv1, rv2, rv3);
-        m.add_face(rv3, rv4, rv1);
+        // m.add_face(rv3, rv4, rv1);
     };
-
 
     void pos_to_box(TMesh &m, Pos p, TVertex ***points) {
         Room *r = get_room(p);
@@ -466,7 +463,7 @@ int main(int argc, char** argv)
 
 	auto l = Labyrinth{t_x, t_y, t_z};
 
-	l.print_paths();
+	// l.print_paths();
 
 	CGAL::IO::write_OBJ( "mesh.obj", l.to_obj() );
 
