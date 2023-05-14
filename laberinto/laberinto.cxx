@@ -247,42 +247,6 @@ public:
 		}
 	}
 
-	static std::vector<Pos> get_walls(Pos p, std::vector<Pos> paths) {
-		std::vector<Pos> possible_walls;
-		std::vector<Pos> walls;
-		int x = p.x;
-		int y = p.y;
-		int z = p.z;
-
-		possible_walls.push_back({x + 1, y, z});
-		possible_walls.push_back({x - 1, y, z});
-		possible_walls.push_back({x, y + 1, z});
-		possible_walls.push_back({x, y - 1, z});
-		possible_walls.push_back({x, y, z + 1});
-		possible_walls.push_back({x, y, z - 1});
-
-		auto not_present = [&paths](const Pos& key) -> bool
-			{
-				return std::find(
-					paths.begin(), paths.end(), key) == paths.end();
-			};
-		std::copy_if (
-			possible_walls.begin(), possible_walls.end(),
-			std::back_inserter(walls), not_present);
-
-		// std::cout << "surrounding : ";
-		// print_rooms(possible_walls);
-
-		// std::cout << std::endl << "path : ";
-		// print_rooms(paths);
-
-		// std::cout << std::endl << "walls : ";
-		// print_rooms(walls);
-		// std::cout << std::endl;
-
-        return walls;
-    }
-
     static TVertex vertex_in_pos(TVertex ***mat, Pos p) {
 		// std::cout << p.to_string() << std::endl;
         return mat[p.x][p.y][p.z];
@@ -432,8 +396,6 @@ public:
     static void pos_to_box(TMesh &m, Labyrinth l, Pos p, TVertex ***points) {
         Room *r = l.get_room(p);
 
-        std::vector<Pos> walls = get_walls(p, r->all_paths());
-
 		// todos los posibles movimientos
 		Pos p1{p.x + 1, p.y    , p.z    };
 		Pos p2{p.x - 1, p.y    , p.z    };
@@ -442,17 +404,33 @@ public:
 		Pos p5{p.x    , p.y    , p.z + 1};
 		Pos p6{p.x    , p.y    , p.z - 1};
 
-		// std::cout << "direcciones :" << p1.to_string()
-		// 		  << p1.to_string()
-		// 		  << p2.to_string()
-		// 		  << p3.to_string()
-		// 		  << p4.to_string()
-		// 		  << p5.to_string()
-		// 		  << p6.to_string() ;
-		// std::cout << std::endl << "paredes :";
-		// print_rooms(walls);
-		// std::cout << std::endl;
+		bool forward = false;
+		bool back = false;
+		bool up = false;
+		bool down = false;
+		bool left = false;
+		bool right = false;
 
+		for (Pos w: r->all_paths()) {
+			if (p1 == w) {
+				forward = true;
+			}
+			else if (p2 == w) {
+				back = true;
+			}
+			else if (p3 == w) {
+				left = true;
+			}
+			else if (p4 == w) {
+				right = true;
+			}
+			else if (p5 == w) {
+				down = true;
+			}
+			else if (p6 == w) {
+				up = true;
+			}
+		}
 		auto real_pos = [](Pos p) -> Pos{
 			// esto se hace para que cuartos adyacentes no compartan sus paredes
 			// pos : 1,      2,      3,      4,      5
@@ -460,58 +438,25 @@ public:
 			return (Pos){p.x * 2, p.y * 2, p.z * 2};
 		};
 
-		bool forward = true;
-		bool back = true;
-		bool up = true;
-		bool down = true;
-		bool left = true;
-		bool right = true;
+		// los path_ solo se necesitan en una direccion
 
-		for (Pos w: walls) {
-			// std::cout << " - from " << p.to_string() << " " << w.to_string() << std::endl ;
-			if (p1 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				forward = false;
-			}
-			else if (p2 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				back = false;
-			}
-			else if (p3 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				left = false;
-			}
-			else if (p4 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				right = false;
-			}
-			else if (p5 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				down = false;
-			}
-			else if (p6 == w) {
-				// std::cout << "equal to " << p1.to_string() <<std::endl;
-				up = false;
-			}
-		}
 		if (forward) {path_x(m, real_pos(p), points, true);}
-		else {wall_x(m, real_pos(p), points, true);}
-		if (back)    {path_x(m, real_pos(p), points, false);}
-		else {wall_x(m, real_pos(p), points, false);}
-		if (up)      {path_z(m, real_pos(p), points, true);}
-		else {wall_z(m, real_pos(p), points, false);}
-		if (down)    {path_z(m, real_pos(p), points, false);}
-		else {wall_z(m, real_pos(p), points, true);}
-		if (left)    {path_y(m, real_pos(p), points, true);}
-		else {wall_y(m, real_pos(p), points, true);}
-		if (right)   {path_y(m, real_pos(p), points, false);}
-		else {wall_y(m, real_pos(p), points, false);}
+		else	     {wall_x(m, real_pos(p), points, true);}
+		if (back)    {/*path_x(m, real_pos(p), points, false);*/}
+		else         {wall_x(m, real_pos(p), points, false);}
 
-		// std::cout << std::endl ;
+		if (up)      {/*path_z(m, real_pos(p), points, true);*/}
+		else         {wall_z(m, real_pos(p), points, false);}
+		if (down)    {path_z(m, real_pos(p), points, false);}
+		else         {wall_z(m, real_pos(p), points, true);}
+
+		if (left)    {/*path_y(m, real_pos(p), points, true);*/}
+		else         {wall_y(m, real_pos(p), points, true);}
+		if (right)   {path_y(m, real_pos(p), points, false);}
+		else         {wall_y(m, real_pos(p), points, false);}
 	}
 
-	TMesh to_obj(Labyrinth l) {
-
+	static TMesh to_obj(Labyrinth l) {
 		TVertex ***points;
 
 		TMesh m;
@@ -520,9 +465,9 @@ public:
 
 		// el + 2 es para tener en cuenta las paredes externas
 		// el * 2, es para que haya dos paredes por cuarto, a cada lado
-		int points_x = (max.x * 2) + 2;
-		int points_y = (max.y * 2) + 2;
-		int points_z = (max.z * 2) + 2;
+		int points_x = (l.max.x * 2) + 2;
+		int points_y = (l.max.y * 2) + 2;
+		int points_z = (l.max.z * 2) + 2;
 
 		points = new TVertex **[points_x];
 		for (int x = 0; x < points_x; ++x) {
@@ -535,87 +480,11 @@ public:
             }
         }
 
-        // TODO: algun dia optimizar esto, que de momento esta un asco
-        // for (int x = 0; x < max.x; ++x) {
-        //     for (int y = 0; y < max.y; ++y) {
-        //         for (int z = 0; z < max.z; ++z) {
-        //             pos_to_box(m, l, {x,y,z}, points);
-        //         }
-        //     }
-        // }
-        // for (Pos p: get_path()) {
-        //  pos_to_box(m, p, points);
-        // }
 		for (Pos p : l.get_path()) {
 			pos_to_box(m, l, p, points);
 		}
         return m;
     }
-
-    static TMesh test_box(Labyrinth l) {
-        TVertex ***points;
-
-        TMesh m;
-
-        int base_sep = 5;
-
-        // el + 2 es para tener en cuenta las paredes externas
-        // el * 2, es para que haya dos paredes por cuarto, a cada lado
-        int points_x = 1 * 2;
-        int points_y = 1 * 2;
-        int points_z = 1 * 2;
-
-        points = new TVertex **[points_x];
-        for (int x = 0; x < points_x; ++x) {
-            points[x] = new TVertex *[points_y];
-            for (int y = 0; y < points_y; ++y) {
-                points[x][y] = new TVertex[points_z];
-                for (int z = 0; z < points_z; ++z) {
-					points[x][y][z] = m.add_vertex({x, y, z});
-                }
-            }
-        }
-
-        pos_to_box(m, l, {0, 0, 0}, points);
-		return m;
-	}
-
-	static TMesh test_to_obj(Labyrinth l) {
-		TVertex ***points;
-
-		TMesh m;
-		int base_sep = 5;
-
-		int max_x = 1;
-		int max_y = 1;
-		int max_z = 1;
-
-		// el + 1 es para tener en cuenta las paredes externas
-		points = new TVertex **[max_x + 2];
-		for (int x = 0; x < max_x + 2; ++x) {
-			points[x] = new TVertex *[max_y + 2];
-			for (int y = 0; y < max_y + 2; ++y) {
-				points[x][y] = new TVertex[max_z + 2];
-				for (int z = 0; z < max_z + 2; ++z) {
-					points[x][y][z] = m.add_vertex({x,y,z});
-				}
-			}
-		}
-
-		// TODO: algun dia optimizar esto, que de momento esta un asco
-		// for (int x = 0; x < max_x; ++x) {
-		// 	for (int y = 0; y < max_y; ++y) {
-		// 		for (int z = 0; z < max_z; ++z) {
-		// 			pos_to_box(m, l, {x,y,z}, points);
-		// 		}
-		// 	}
-		// }
-		for (Pos p : l.get_path()) {
-			pos_to_box(m, l, p, points);
-		}
-		return m;
-	}
-
 private:
 
 	bool verify_internal(Pos p) {
@@ -711,8 +580,6 @@ private:
 	}
 };
 
-
-// TODO usar esto de referencia para armar el laberinto
 TMesh test_box() {
 	TMesh mesh;
 	TMesh::Vertex_index v_0_0_0 = mesh.add_vertex(TPoint(0, 0, 0));
