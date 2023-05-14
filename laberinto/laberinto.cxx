@@ -161,9 +161,9 @@ public:
 			}
 		}
 
-		std::cout << "path: ";
-		print_rooms(path);
-		std::cout << std::endl;
+		// std::cout << "path: ";
+		// print_rooms(path);
+		// std::cout << std::endl;
 		return path;
 	}
 
@@ -270,21 +270,21 @@ public:
 			possible_walls.begin(), possible_walls.end(),
 			std::back_inserter(walls), not_present);
 
-		std::cout << "surrounding : ";
-		print_rooms(possible_walls);
+		// std::cout << "surrounding : ";
+		// print_rooms(possible_walls);
 
-		std::cout << std::endl << "path : ";
-		print_rooms(paths);
+		// std::cout << std::endl << "path : ";
+		// print_rooms(paths);
 
-		std::cout << std::endl << "walls : ";
-		print_rooms(walls);
-		std::cout << std::endl;
+		// std::cout << std::endl << "walls : ";
+		// print_rooms(walls);
+		// std::cout << std::endl;
 
         return walls;
     }
 
     static TVertex vertex_in_pos(TVertex ***mat, Pos p) {
-		std::cout << p.to_string() << std::endl;
+		// std::cout << p.to_string() << std::endl;
         return mat[p.x][p.y][p.z];
     }
 
@@ -340,6 +340,95 @@ public:
 		assert(f != TMesh::null_face());
     };
 
+    static void path_x (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
+
+		int dir = front ? 1 : -1;
+	// y
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({dir + 0, 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 0, 0, 1})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({dir + 0, 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 0, 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 1, 0}))) ;
+
+	// z
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({dir + 0, 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 0, 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 0, 0})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({dir + 0, 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 1, 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({dir + 0, 1, 1})));
+
+    };
+    static void path_y (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
+		int dir = front ? 1 : -1;
+	// x
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, dir + 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({0, dir + 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({0, dir + 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({0, dir + 1, 0})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({1, dir + 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 0, 1})));
+
+	// z
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, dir + 0, 0})),
+				   vertex_in_pos(mat, p.add_pos({0, dir + 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 1, 0})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 0, 0})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, dir + 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 0, 1})),
+				   vertex_in_pos(mat, p.add_pos({1, dir + 1, 1})),
+				   vertex_in_pos(mat, p.add_pos({0, dir + 1, 1})));
+
+    };
+    static void path_z (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
+		int dir = !front ? 1 : -1;
+	// x
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, 0, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({0, 0, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({0, 1, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({0, 1, dir + 0})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({1, 0, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({1, 1, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({1, 1, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({1, 0, dir + 1})));
+
+	// y
+	// b
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, 0, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({1, 0, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({1, 0, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({0, 0, dir + 1})));
+
+	// f
+		m.add_face(vertex_in_pos(mat, p.add_pos({0, 1, dir + 0})),
+				   vertex_in_pos(mat, p.add_pos({0, 1, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({1, 1, dir + 1})),
+				   vertex_in_pos(mat, p.add_pos({1, 1, dir + 0}))) ;
+
+    };
+
     static void pos_to_box(TMesh &m, Labyrinth l, Pos p, TVertex ***points) {
         Room *r = l.get_room(p);
 
@@ -371,34 +460,54 @@ public:
 			return (Pos){p.x * 2, p.y * 2, p.z * 2};
 		};
 
+		bool forward = true;
+		bool back = true;
+		bool up = true;
+		bool down = true;
+		bool left = true;
+		bool right = true;
+
 		for (Pos w: walls) {
-			std::cout << " - from " << p.to_string() << " " << w.to_string() << std::endl ;
+			// std::cout << " - from " << p.to_string() << " " << w.to_string() << std::endl ;
 			if (p1 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_x(m, real_pos(p), points, true);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				forward = false;
 			}
 			else if (p2 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_x(m, real_pos(p), points, false);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				back = false;
 			}
 			else if (p3 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_y(m, real_pos(p), points, true);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				left = false;
 			}
 			else if (p4 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_y(m, real_pos(p), points, false);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				right = false;
 			}
 			else if (p5 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_z(m, real_pos(p), points, true);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				down = false;
 			}
 			else if (p6 == w) {
-				std::cout << "equal to " << p1.to_string() <<std::endl;
-				wall_z(m, real_pos(p), points, false);
+				// std::cout << "equal to " << p1.to_string() <<std::endl;
+				up = false;
 			}
 		}
-		std::cout << std::endl ;
+		if (forward) {path_x(m, real_pos(p), points, true);}
+		else {wall_x(m, real_pos(p), points, true);}
+		if (back)    {path_x(m, real_pos(p), points, false);}
+		else {wall_x(m, real_pos(p), points, false);}
+		if (up)      {path_z(m, real_pos(p), points, true);}
+		else {wall_z(m, real_pos(p), points, false);}
+		if (down)    {path_z(m, real_pos(p), points, false);}
+		else {wall_z(m, real_pos(p), points, true);}
+		if (left)    {path_y(m, real_pos(p), points, true);}
+		else {wall_y(m, real_pos(p), points, true);}
+		if (right)   {path_y(m, real_pos(p), points, false);}
+		else {wall_y(m, real_pos(p), points, false);}
+
+		// std::cout << std::endl ;
 	}
 
 	TMesh to_obj(Labyrinth l) {
