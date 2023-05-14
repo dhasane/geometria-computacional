@@ -58,10 +58,17 @@ class Room {
 	bool filled;
 
 public:
+	Pos from;
 	std::vector<Pos> path;
 
 	std::vector<Pos> get_connected() {
 		return path;
+	}
+
+	std::vector<Pos> all_paths() {
+		std::vector<Pos> all_paths{path};
+		all_paths.push_back(from);
+		return all_paths;
 	}
 
 	Room() {
@@ -190,7 +197,7 @@ public:
 		}
 	}
 
-	void print_rooms (std::vector<Pos> rooms) {
+	static void print_rooms (std::vector<Pos> rooms) {
 		for (Pos p : rooms) {
 			std::cout << p.to_string();
 		}
@@ -212,7 +219,8 @@ public:
 			if (!r->is_filled()) {
 				// std::cout << std::endl;
 				// std::cout << std::endl;
-				std::cout << "from " << prev.to_string() << " to " << current.to_string() << std::endl;
+				// std::cout << "from " << prev.to_string() << " to " << current.to_string() << std::endl;
+				r->from = prev;
 				if (0 <= prev.x) {
 					get_room(prev)->connect(current);
 				}
@@ -240,25 +248,37 @@ public:
 	}
 
 	static std::vector<Pos> get_walls(Pos p, std::vector<Pos> paths) {
+		std::vector<Pos> possible_walls;
 		std::vector<Pos> walls;
 		int x = p.x;
 		int y = p.y;
 		int z = p.z;
 
-		walls.push_back({x + 1, y, z});
-		walls.push_back({x - 1, y, z});
-		walls.push_back({x, y + 1, z});
-		walls.push_back({x, y - 1, z});
-		walls.push_back({x, y, z + 1});
-		walls.push_back({x, y, z - 1});
+		possible_walls.push_back({x + 1, y, z});
+		possible_walls.push_back({x - 1, y, z});
+		possible_walls.push_back({x, y + 1, z});
+		possible_walls.push_back({x, y - 1, z});
+		possible_walls.push_back({x, y, z + 1});
+		possible_walls.push_back({x, y, z - 1});
 
-		auto pred = [&walls](const Pos& key) ->bool
+		auto not_present = [&paths](const Pos& key) -> bool
 			{
-				return std::find(walls.begin(), walls.end(), key) != walls.end();
+				return std::find(
+					paths.begin(), paths.end(), key) == paths.end();
 			};
-		for (Pos c: paths) {
-			walls.erase(std::remove_if(walls.begin(), walls.end(), pred), walls.end());
-		}
+		std::copy_if (
+			possible_walls.begin(), possible_walls.end(),
+			std::back_inserter(walls), not_present);
+
+		std::cout << "surrounding : ";
+		print_rooms(possible_walls);
+
+		std::cout << std::endl << "path : ";
+		print_rooms(paths);
+
+		std::cout << std::endl << "walls : ";
+		print_rooms(walls);
+		std::cout << std::endl;
 
         return walls;
     }
@@ -269,70 +289,61 @@ public:
     }
 
     static void wall_x (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : 0;
-        TVertex rv1 = vertex_in_pos(mat, p.add_pos({step,0,0}));
-        TVertex rv2 = vertex_in_pos(mat, p.add_pos({step,1,0}));
-        TVertex rv3 = vertex_in_pos(mat, p.add_pos({step,1,1}));
-        TVertex rv4 = vertex_in_pos(mat, p.add_pos({step,0,1}));
-        std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
-        // m.add_face(rv1, rv2, rv3);
-        // m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda cara no esta siendo agregada
 		TMesh::face_index f;
-        if (front) {
-			// f = m.add_face(rv1, rv2, rv3, rv4);
-			m.add_face(rv1, rv2, rv3);
-			m.add_face(rv3, rv4, rv1); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
+		if (front) {
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({1, 0, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 1})),
+				vertex_in_pos(mat, p.add_pos({1, 0, 1})));
 		} else {
-			m.add_face(rv3, rv2, rv1);
-			m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
-        }
-
-		// assert(f != TMesh::null_face());
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({0, 0, 0})),
+				vertex_in_pos(mat, p.add_pos({0, 0, 1})),
+				vertex_in_pos(mat, p.add_pos({0, 1, 1})),
+				vertex_in_pos(mat, p.add_pos({0, 1, 0})));
+		}
+		assert(f != TMesh::null_face());
     };
     static void wall_y (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : 0;
-        TVertex rv1 = vertex_in_pos(mat, p.add_pos({0,step,0}));
-        TVertex rv2 = vertex_in_pos(mat, p.add_pos({0,step,1}));
-        TVertex rv3 = vertex_in_pos(mat, p.add_pos({1,step,1}));
-        TVertex rv4 = vertex_in_pos(mat, p.add_pos({1,step,0}));
-        // std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
-        // m.add_face(rv1, rv2, rv3);
-        // m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda cara no esta siendo agregada
-        if (front) {
-			// f = m.add_face(rv1, rv2, rv3, rv4);
-			m.add_face(rv1, rv2, rv3);
-			m.add_face(rv3, rv4, rv1); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
+		TMesh::face_index f;
+		if (front) {
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({0, 1, 0})),
+				vertex_in_pos(mat, p.add_pos({0, 1, 1})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 1})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 0})));
 		} else {
-			m.add_face(rv3, rv2, rv1);
-			m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
-        }
-
-		// assert(f != TMesh::null_face());
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({0, 0, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 0, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 0, 1})),
+				vertex_in_pos(mat, p.add_pos({0, 0, 1})));
+		}
+		assert(f != TMesh::null_face());
     };
     static void wall_z (TMesh& m, Pos p, TVertex ***mat, bool front = true) {
-        int step = front ? 1 : 0;
-        auto rv1 = vertex_in_pos(mat, p.add_pos({0,1,step}));
-        auto rv2 = vertex_in_pos(mat, p.add_pos({1,0,step}));
-        auto rv3 = vertex_in_pos(mat, p.add_pos({1,1,step}));
-        auto rv4 = vertex_in_pos(mat, p.add_pos({0,1,step}));
-        // std::cout << rv1 << " " << rv2 << " " << rv3 << " " << rv4 << std::endl;
-        // m.add_face(rv1, rv2, rv3);
-        // m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda cara no esta siendo agregada
-        if (!front) {
-			// f = m.add_face(rv1, rv2, rv3, rv4);
-			m.add_face(rv1, rv2, rv3);
-			m.add_face(rv3, rv4, rv1); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
+		TMesh::face_index f;
+		if (front) {
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({0, 0, 1})),
+				vertex_in_pos(mat, p.add_pos({1, 0, 1})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 1})),
+				vertex_in_pos(mat, p.add_pos({0, 1, 1})));
 		} else {
-			m.add_face(rv3, rv2, rv1);
-			m.add_face(rv1, rv4, rv3); // TODO: aqui esta el bug, la segunda // cara no esta siendo agregada
-        }
+			f = m.add_face(
+				vertex_in_pos(mat, p.add_pos({0, 0, 0})),
+				vertex_in_pos(mat, p.add_pos({0, 1, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 1, 0})),
+				vertex_in_pos(mat, p.add_pos({1, 0, 0})));
+		}
+		assert(f != TMesh::null_face());
     };
 
     static void pos_to_box(TMesh &m, Labyrinth l, Pos p, TVertex ***points) {
         Room *r = l.get_room(p);
 
-		// TODO: revisar esto, creo que esta retornando mal
-        std::vector<Pos> walls = get_walls(p, r->path);
+        std::vector<Pos> walls = get_walls(p, r->all_paths());
 
 		// todos los posibles movimientos
 		Pos p1{p.x + 1, p.y    , p.z    };
@@ -342,6 +353,17 @@ public:
 		Pos p5{p.x    , p.y    , p.z + 1};
 		Pos p6{p.x    , p.y    , p.z - 1};
 
+		// std::cout << "direcciones :" << p1.to_string()
+		// 		  << p1.to_string()
+		// 		  << p2.to_string()
+		// 		  << p3.to_string()
+		// 		  << p4.to_string()
+		// 		  << p5.to_string()
+		// 		  << p6.to_string() ;
+		// std::cout << std::endl << "paredes :";
+		// print_rooms(walls);
+		// std::cout << std::endl;
+
 		auto real_pos = [](Pos p) -> Pos{
 			// esto se hace para que cuartos adyacentes no compartan sus paredes
 			// pos : 1,      2,      3,      4,      5
@@ -349,29 +371,31 @@ public:
 			return (Pos){p.x * 2, p.y * 2, p.z * 2};
 		};
 
-		Room *wr;
 		for (Pos w: walls) {
-			wr = l.get_room(w);
-			if (wr != nullptr) {
-				std::cout << " - from " << p.to_string() << " " << w.to_string() << std::endl ;
-				if (p1 == w) {
-					wall_x(m, real_pos(p), points, true);
-				}
-				else if (p2 == w) {
-					wall_x(m, real_pos(p), points, false);
-				}
-				else if (p3 == w) {
-					wall_y(m, real_pos(p), points, true);
-				}
-				// else if (p4 == w) {
-				// 	wall_y(m, real_pos(p), points, false);
-				// }
-				else if (p5 == w) {
-					wall_z(m, real_pos(p), points, true);
-				}
-				// else if (p6 == w) {
-				// 	wall_z(m, real_pos(p), points, false);
-				// }
+			std::cout << " - from " << p.to_string() << " " << w.to_string() << std::endl ;
+			if (p1 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_x(m, real_pos(p), points, true);
+			}
+			else if (p2 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_x(m, real_pos(p), points, false);
+			}
+			else if (p3 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_y(m, real_pos(p), points, true);
+			}
+			else if (p4 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_y(m, real_pos(p), points, false);
+			}
+			else if (p5 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_z(m, real_pos(p), points, true);
+			}
+			else if (p6 == w) {
+				std::cout << "equal to " << p1.to_string() <<std::endl;
+				wall_z(m, real_pos(p), points, false);
 			}
 		}
 		std::cout << std::endl ;
@@ -403,16 +427,19 @@ public:
         }
 
         // TODO: algun dia optimizar esto, que de momento esta un asco
-        for (int x = 0; x < max.x; ++x) {
-            for (int y = 0; y < max.y; ++y) {
-                for (int z = 0; z < max.z; ++z) {
-                    pos_to_box(m, l, {x,y,z}, points);
-                }
-            }
-        }
+        // for (int x = 0; x < max.x; ++x) {
+        //     for (int y = 0; y < max.y; ++y) {
+        //         for (int z = 0; z < max.z; ++z) {
+        //             pos_to_box(m, l, {x,y,z}, points);
+        //         }
+        //     }
+        // }
         // for (Pos p: get_path()) {
         //  pos_to_box(m, p, points);
         // }
+		for (Pos p : l.get_path()) {
+			pos_to_box(m, l, p, points);
+		}
         return m;
     }
 
@@ -441,7 +468,6 @@ public:
         }
 
         pos_to_box(m, l, {0, 0, 0}, points);
-		// TODO: algun dia optimizar esto, que de momento esta un asco
 		return m;
 	}
 
@@ -468,12 +494,15 @@ public:
 		}
 
 		// TODO: algun dia optimizar esto, que de momento esta un asco
-		for (int x = 0; x < max_x; ++x) {
-			for (int y = 0; y < max_y; ++y) {
-				for (int z = 0; z < max_z; ++z) {
-					pos_to_box(m, l, {x,y,z}, points);
-				}
-			}
+		// for (int x = 0; x < max_x; ++x) {
+		// 	for (int y = 0; y < max_y; ++y) {
+		// 		for (int z = 0; z < max_z; ++z) {
+		// 			pos_to_box(m, l, {x,y,z}, points);
+		// 		}
+		// 	}
+		// }
+		for (Pos p : l.get_path()) {
+			pos_to_box(m, l, p, points);
 		}
 		return m;
 	}
@@ -573,59 +602,55 @@ private:
 	}
 };
 
+
 // TODO usar esto de referencia para armar el laberinto
 TMesh test_box() {
 	TMesh mesh;
-	TMesh::Vertex_index v0 = mesh.add_vertex(TPoint(0, 0, 0));
-	TMesh::Vertex_index v1 = mesh.add_vertex(TPoint(0, 0, 1));
-	TMesh::Vertex_index v2 = mesh.add_vertex(TPoint(0, 1, 0));
-	TMesh::Vertex_index v3 = mesh.add_vertex(TPoint(0, 1, 1));
-	TMesh::Vertex_index v4 = mesh.add_vertex(TPoint(1, 0, 0));
-	TMesh::Vertex_index v5 = mesh.add_vertex(TPoint(1, 0, 1));
-	TMesh::Vertex_index v6 = mesh.add_vertex(TPoint(1, 1, 0));
-	TMesh::Vertex_index v7 = mesh.add_vertex(TPoint(1, 1, 1));
+	TMesh::Vertex_index v_0_0_0 = mesh.add_vertex(TPoint(0, 0, 0));
+	TMesh::Vertex_index v_0_0_1 = mesh.add_vertex(TPoint(0, 0, 1));
+	TMesh::Vertex_index v_0_1_0 = mesh.add_vertex(TPoint(0, 1, 0));
+	TMesh::Vertex_index v_0_1_1 = mesh.add_vertex(TPoint(0, 1, 1));
+	TMesh::Vertex_index v_1_0_0 = mesh.add_vertex(TPoint(1, 0, 0));
+	TMesh::Vertex_index v_1_0_1 = mesh.add_vertex(TPoint(1, 0, 1));
+	TMesh::Vertex_index v_1_1_0 = mesh.add_vertex(TPoint(1, 1, 0));
+	TMesh::Vertex_index v_1_1_1 = mesh.add_vertex(TPoint(1, 1, 1));
 
-	std::vector<TMesh::Vertex_index> vertices;
-	vertices.push_back(v0); vertices.push_back(v1); vertices.push_back(v3); vertices.push_back(v2);
-	mesh.add_face(vertices);
+	// x
+	// b
+	mesh.add_face(v_0_0_0, v_0_0_1, v_0_1_1, v_0_1_0);
+	// f
+	mesh.add_face(v_1_0_0, v_1_1_0, v_1_1_1, v_1_0_1);
 
-	vertices.clear();
-	vertices.push_back(v0); vertices.push_back(v4); vertices.push_back(v5); vertices.push_back(v1);
-	mesh.add_face(vertices);
+	// y
+	// b
+	mesh.add_face(v_0_0_0, v_1_0_0, v_1_0_1, v_0_0_1);
+	// f
+	mesh.add_face(v_0_1_0, v_0_1_1, v_1_1_1, v_1_1_0);
 
-	vertices.clear();
-	vertices.push_back(v0); vertices.push_back(v2); vertices.push_back(v6); vertices.push_back(v4);
-	mesh.add_face(vertices);
-
-	vertices.clear();
-	vertices.push_back(v1); vertices.push_back(v5); vertices.push_back(v7); vertices.push_back(v3);
-	mesh.add_face(vertices);
-
-	vertices.clear();
-	vertices.push_back(v2); vertices.push_back(v3); vertices.push_back(v7); vertices.push_back(v6);
-	mesh.add_face(vertices);
-
-	vertices.clear();
-	vertices.push_back(v4); vertices.push_back(v6); vertices.push_back(v7); vertices.push_back(v5);
-	mesh.add_face(vertices);
+	// z
+	// b
+	mesh.add_face(v_0_0_0, v_0_1_0, v_1_1_0, v_1_0_0);
+	// f
+	mesh.add_face(v_0_0_1, v_1_0_1, v_1_1_1, v_0_1_1);
 
 	return mesh;
 }
+
 int main(int argc, char** argv)
 {
     int t_x = argc >= 2 ? std::atoi(argv[1]) : 20;
     int t_y = argc >= 2 ? std::atoi(argv[2]) : 20;
     int t_z = argc >= 2 ? std::atoi(argv[3]) : 20;
 
-	// auto l = Labyrinth{t_x, t_y, t_z};
+	auto l = Labyrinth{t_x, t_y, t_z};
 	// auto l = Labyrinth{};
 
 	// l.print_paths();
 
-	// CGAL::IO::write_OBJ( "mesh.obj", l.to_obj() );
+	CGAL::IO::write_OBJ( "mesh.obj", l.to_obj(l) );
 	std::cout << "to obj" << std::endl;
 	// CGAL::IO::write_OBJ( "mesh.obj", Labyrinth::test_box(l) );
-	CGAL::IO::write_OBJ( "box.obj", test_box() );
+	// CGAL::IO::write_OBJ( "box.obj", test_box() );
 
     return 0;
 }
