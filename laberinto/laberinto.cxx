@@ -102,34 +102,33 @@ class Labyrinth {
 	std::deque<std::pair<Pos, Pos>> potential_rooms;
 
 public:
-	Labyrinth() {
-		max = {2, 2, 2};
-		rooms = new Room **[max.x];
-		for (int i = 0; i < max.x; ++i) {
-			rooms[i] = new Room *[max.y];
-			for (int j = 0; j < max.y; ++j) {
-				rooms[i][j] = new Room[max.z];
-			}
-		}
-
-		Pos f{0, 0, 0};
-		start = f;
-	}
 	Labyrinth(int size_x, int size_y, int size_z) {
 		max = {size_x, size_y, size_z};
 		complete = false;
 
 		// matrix cuadrada
 		rooms = new Room **[max.x];
-		for (int i = 0; i < max.x; ++i) {
-			rooms[i] = new Room *[max.y];
-			for (int j = 0; j < max.y; ++j) {
-				rooms[i][j] = new Room[max.z];
+		std::vector<Pos> posible_inicio;
+		for (int x = 0; x < max.x; ++x) {
+			rooms[x] = new Room *[max.y];
+			for (int y = 0; y < max.y; ++y) {
+				rooms[x][y] = new Room[max.z];
+				for (int z = 0 ; z < max.z ; z++)
+				{
+					if (x > y){
+						rooms[x][y][z].fill();
+					}
+					if (z==0 && !rooms[x][y][z].is_filled()) {
+						posible_inicio.push_back({x,y,z});
+					}
+				}
 			}
 		}
 
 		// siempre empieza en la capa 0 de z, por lo tanto, termina al llegar a max_z
-		Pos f{get_random(max.x), get_random(max.y), 0};
+
+		// Pos f{get_random(max.x), get_random(max.y), 0};
+		Pos f{posible_inicio[get_random(posible_inicio.size())]};
 		start = f;
 		potential_rooms.push_back({f, OUTSIDE});
 
@@ -483,6 +482,8 @@ public:
 		for (Pos p : l.get_path()) {
 			pos_to_box(m, l, p, points);
 		}
+
+		// TODO retornar cara en entrada y cara en salida
         return m;
     }
 private:
