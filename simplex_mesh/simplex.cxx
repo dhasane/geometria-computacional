@@ -9,6 +9,7 @@
 using TKernel = CGAL::Cartesian< double >;
 using TReal = TKernel::FT;
 using TPoint = TKernel::Point_3;
+using TLine = TKernel::Line_3;
 using TMesh = CGAL::Surface_mesh< TPoint >;
 using TPoint_ind = TMesh::vertex_index;
 using TFace = TMesh::Face_index;
@@ -18,7 +19,18 @@ using TFace = TMesh::Face_index;
 // }
 
 double dot_product(TPoint p1, TPoint p2) {
-  return p1.x() * p2.x() + p1.y() * p2.y() + p1.z() * p2.z();
+  return
+	  p1.x() * p2.x() +
+	  p1.y() * p2.y() +
+	  p1.z() * p2.z();
+}
+
+TPoint cross_product(TPoint p1, TPoint p2) {
+	return {
+		p1.y() * p2.z() - p1.z() * p2.y(),
+		p1.z() * p2.x() - p1.x() * p2.z(),
+		p1.x() * p2.y() - p1.y() * p2.x()
+	};
 }
 
 struct Circ {
@@ -33,11 +45,21 @@ class Adjacents {
 	TPoint v2;
 	TPoint v3;
 
-	Adjacents (CGAL::Halfedge he) {
+public:
 
-		this->v1 = he;
-		this->v2 = he.prev.opp;
-		this->v3 = he.prev.opp.prev.opp;
+	// Adjacents (TMesh m, TMesh::vertex_index vi) {
+	// 	center = m.point(vi);
+	// 	auto he = m.halfedge(vi);
+
+	// 	this->v1 = he;
+	// 	this->v2 = he.prev.opp;
+	// 	this->v3 = he.prev.opp.prev.opp;
+	// }
+
+	Adjacents (TPoint p1, TPoint p2, TPoint p3) {
+		this->v1 = p1;
+		this->v2 = p2;
+		this->v3 = p3;
 	}
 
 	Adjacents (TPoint cntr, TPoint v1, TPoint v2, TPoint v3) {
@@ -55,25 +77,37 @@ class Adjacents {
 			);
 	}
 
-	double normal_plano_tangente() {
-		double v = dot_product(v1, v2) + dot_product(v2, v3) + dot_product(v3, v1);
-		return v / magnitude();
-	}
-
 	Circ curcumscribed_circle() {
-		double x = (v1.x() + v2.x() + v3.x())/3;
-		double y = (v1.y() + v2.y() + v3.y())/3;
-		double z = (v1.z() + v2.z() + v3.z())/3;
+		// 1. Find the equation of the plane that contains the three
+		// points.
+		TLine AB {v1, v2};
+		TLine AC {v1, v3};
+		
+		// 2. Find the midpoint of any two sides of the triangle.
+		TPoint mid1{(v1.x() + v2.x())/2, (v1.y() + v2.y())/2, (v1.z() + v2.z())/2};
+		TPoint mid2{(v1.x() + v3.x())/2, (v1.y() + v3.y())/2, (v1.z() + v3.z())/2};
 
-		TPoint triang_center{x, y, z};
+		// 3. Find the normal vector to the plane containing the
+		// triangle.
+		auto normal = cross_product(AB.point(), AC.point());
 
-		return Circ{ triang_center, squared_distance(triang_center, v1) }; // S
+		// 4. Find the intersection of the line passing through the
+		// two midpoints with the plane containing the triangle.
+		TPoint u = cross_product({mid1.x() - mid2.x(), mid1.y() - mid2.y(), mid1.z() - mid2.z()}, normal);
+		TPoint v = cross_product(u, normal);
+
+		// 5. Find the distance between any of the three vertices and
+		// the intersection point found in step 4.
+
+		// 6. Find the center of the circumcircle by taking the
+		// midpoint of any two sides of the triangle and adding the
+		// radius times the normal vector to the plane containing the
+		// triangle.
 	}
 
 	Circ circumscribed_sphere() {
 		// TODO: no entiendo esto
-		sin = r / R;
-		cos;
+		// Find the equation of the plane that contains the three points
 
 	}
 };
@@ -82,18 +116,11 @@ class SimplexMesh {
 
 	TMesh tm;
 
-	Vecinos encontrar_vecinos(TMesh::vertex_index vi) {
-		// TODO encontrar los puntos vecinos
-		tm.edge(tm.point(point));
-		tm.edge(point);
-
-		return Vecinos{};
-	}
-
-
-
 };
 
 int main () {
+	TPoint p1 = {1, 0, 0};
+    TPoint p2 = {0, 1, 0};
+    TPoint p3 = {0, 0, 1};
 	return 0;
 }
