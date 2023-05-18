@@ -26,6 +26,10 @@ struct Pos {
 			z == p2.z;
 	}
 
+	bool operator!=(Pos p2) {
+		return !(*this == p2);
+	}
+
 	Pos add_pos(Pos p) {
 		return (Pos){x+p.x, y+p.y, z+p.z};
 	}

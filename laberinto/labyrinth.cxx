@@ -157,9 +157,6 @@ public:
 			Room *r = get_room(current);
 
 			if (!r->is_filled()) {
-				// std::cout << std::endl;
-				// std::cout << std::endl;
-				// std::cout << "from " << prev.to_string() << " to " << current.to_string() << std::endl;
 				r->from = prev;
 				if (0 <= prev.x) {
 					get_room(prev)->connect(current);

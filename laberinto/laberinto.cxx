@@ -19,11 +19,10 @@ int main(int argc, char** argv)
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
 
-	LabSolver::solve(LabToMesh::to_obj(l), l.start, l.end);
-	// CGAL::IO::write_OBJ(
-	// 	"solution.obj",
-	// 	LabSolver::solve(LabToMesh::to_obj(l), l.start, l.end)
-	// 	);
+	CGAL::IO::write_OBJ(
+		"solution.obj",
+		LabSolver::solve(LabToMesh::to_obj(l), l.start, l.end)
+		);
 
 
     return 0;

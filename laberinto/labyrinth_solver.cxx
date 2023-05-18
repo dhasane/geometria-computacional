@@ -50,16 +50,14 @@ struct LabSolver {
 			int pasos;
 			boost::tie(fi, pasos) = pending_faces.front(); pending_faces.pop_front();
 
-			std::cout << "out " << fi << "  " << pasos << std::endl;
+			pasos++;
 
 			for (TMesh::face_index fac: m.faces_around_face(m.halfedge(fi))){
-				pending_faces.push_back({fac, pasos + 1});
-
 				if (gone_through_faces.find(fac) == gone_through_faces.end() ||
-					gone_through_faces[fac].second > pasos + 1) {
-
-					gone_through_faces[fac] = {fi, pasos + 1};
-					std::cout << "surround " << fac << "  " << pasos + 1 << std::endl;
+					gone_through_faces[fac].second > pasos)
+				{
+					gone_through_faces[fac] = {fi, pasos};
+					pending_faces.push_back({fac, pasos});
 				}
 
 				for (auto vv :m.vertices_around_face(m.halfedge(fac)) ) {
@@ -70,18 +68,17 @@ struct LabSolver {
 				}
 			}
 		}
-
-		std::cout << "test" << std::endl;
-		return solution;
 		//       cara actual                  cara anterior      pasos
 		// std::map<TMesh::face_index, std::pair<TMesh::face_index, int>> gone_through_faces;
 		std::pair<TMesh::face_index, int> curr = gone_through_faces[last_face];
 		while (curr.first != first_face) {
-			// std::vector<TPoint> pts;
-			// for (TMesh::vertex_index tt : m.vertices_around_face(m.halfedge(curr.first))) {
-			// 	pts.push_back(m.point(tt));
-			// }
-			// solution.add_face(pts);
+			std::vector<TMesh::vertex_index> pts;
+			for (TMesh::vertex_index tt : m.vertices_around_face(m.halfedge(curr.first))) {
+				pts.push_back(
+					solution.add_vertex(m.point(tt))
+					);
+			}
+			solution.add_face(pts);
 			std::cout << curr.first << "  " << curr.second << std::endl;
 			curr = gone_through_faces[curr.first];
 		}
