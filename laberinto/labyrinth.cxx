@@ -87,6 +87,8 @@ public:
 		std::deque<Pos> dest;
 		std::vector<Pos> path;
 
+		path.push_back(start);
+
 		for (auto a : get_room(start)->path) {
 			dest.push_back(a);
 			path.push_back(a);
@@ -102,9 +104,6 @@ public:
 			}
 		}
 
-		// std::cout << "path: ";
-		// print_rooms(path);
-		// std::cout << std::endl;
 		return path;
 	}
 
