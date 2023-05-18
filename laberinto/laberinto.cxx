@@ -13,12 +13,13 @@ int main(int argc, char** argv)
 
 	auto l = Labyrinth{
 		t_x, t_y, t_z
-		// , Filter::circle({t_x, t_y, t_z})
+		, Filter::circle({t_x, t_y, t_z})
 		// , Filter::object({t_x, t_y, t_z})
 	};
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
 
+	// TODO: hay un error cuando el laberinto no es cuadrado
 	CGAL::IO::write_OBJ(
 		"solution.obj",
 		LabSolver::solve(LabToMesh::to_obj(l), l.start, l.end)
