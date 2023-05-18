@@ -5,9 +5,7 @@
 #include <string>
 #include <sstream>
 
-class Pos {
-public:
-
+struct Pos {
 	int x;
 	int y;
 	int z;
@@ -38,8 +36,6 @@ public:
 					 dist.y * dist.y +
 					 dist.z * dist.z);
 	}
-
-
 };
 
 #endif

@@ -32,8 +32,6 @@ int get_random(int to) {
 class Labyrinth {
 
 	Room ***rooms;
-	Pos start;
-	Pos end;
 
 	bool complete;
 
@@ -41,6 +39,8 @@ class Labyrinth {
 	std::deque<std::pair<Pos, Pos>> potential_rooms;
 
 public:
+	Pos start;
+	Pos end;
 	Pos max;
 
 	Labyrinth(int size_x, int size_y, int size_z, std::function<bool(Pos)> filter = nullptr) {
