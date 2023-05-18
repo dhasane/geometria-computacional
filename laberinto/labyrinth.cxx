@@ -29,13 +29,6 @@ int get_random(int to) {
 	return dis(gen);
 }
 
-float distancia(Pos p1, Pos p2) {
-	Pos dist{p1.x - p2.x, p1.y - p2.y, p1.z - p2.z};
-	return sqrt( dist.x * dist.x +
-				 dist.y * dist.y +
-				 dist.z * dist.z);
-}
-
 class Labyrinth {
 
 	Room ***rooms;
@@ -50,7 +43,7 @@ class Labyrinth {
 public:
 	Pos max;
 
-	Labyrinth(int size_x, int size_y, int size_z) {
+	Labyrinth(int size_x, int size_y, int size_z, std::function<bool(Pos)> filter = nullptr) {
 		max = {size_x, size_y, size_z};
 		complete = false;
 
@@ -58,14 +51,13 @@ public:
 		rooms = new Room **[max.x];
 		std::vector<Pos> posible_inicio;
 
-		Pos centro {max.x/2,max.y/2,max.z/2};
 		for (int x = 0; x < max.x; ++x) {
 			rooms[x] = new Room *[max.y];
 			for (int y = 0; y < max.y; ++y) {
 				rooms[x][y] = new Room[max.z];
 				for (int z = 0 ; z < max.z ; z++)
 				{
-					if (centro.x < distancia({x, y, z}, centro)){
+					if (filter != nullptr && filter({x, y, z})) {
 						rooms[x][y][z].fill();
 					}
 					if (z==0 && !rooms[x][y][z].is_filled()) {
