@@ -160,6 +160,13 @@ public:
 
     };
 
+	static Pos real_pos (Pos p) {
+		// esto se hace para que cuartos adyacentes no compartan sus paredes
+		// pos : 1,      2,      3,      4,      5
+		// real: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5
+		return (Pos){p.x * 2, p.y * 2, p.z * 2};
+	};
+
     static void pos_to_box(TMesh &m, Labyrinth l, Pos p, TVertex ***points) {
         Room *r = l.get_room(p);
 
@@ -198,12 +205,6 @@ public:
 				up = true;
 			}
 		}
-		auto real_pos = [](Pos p) -> Pos{
-			// esto se hace para que cuartos adyacentes no compartan sus paredes
-			// pos : 1,      2,      3,      4,      5
-			// real: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5
-			return (Pos){p.x * 2, p.y * 2, p.z * 2};
-		};
 
 		// los path_ solo se necesitan en una direccion
 

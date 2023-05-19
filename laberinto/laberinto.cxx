@@ -19,12 +19,14 @@ int main(int argc, char** argv)
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
 
-	// TODO: hay un error cuando el laberinto no es cuadrado
 	CGAL::IO::write_OBJ(
 		"solution.obj",
-		LabSolver::solve(LabToMesh::to_obj(l), l.start, l.end)
+		LabSolver::solve(
+			LabToMesh::to_obj(l),
+			LabToMesh::real_pos(l.start),
+			LabToMesh::real_pos(l.end)
+			)
 		);
-
 
     return 0;
 }
