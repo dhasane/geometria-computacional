@@ -10,7 +10,7 @@ struct Pos {
 	int y;
 	int z;
 
-	std::string to_string() {
+	std::string to_string() const {
 		std::ostringstream s;
 		s << "("
 		<< x << ", "

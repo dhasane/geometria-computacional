@@ -3,6 +3,7 @@
 #include "pos.cxx"
 #include "filter.cxx"
 #include "labyrinth_solver.cxx"
+#include <CGAL/IO/OBJ.h>
 
 int main(int argc, char** argv)
 {
@@ -14,8 +15,11 @@ int main(int argc, char** argv)
 
 	auto l = Labyrinth{
 		t_x, t_y, t_z
-		, Filter::circle({t_x, t_y, t_z})
-		// , Filter::object({t_x, t_y, t_z})
+		// , Filter::circle({t_x, t_y, t_z})
+		, Filter::object(
+			objpath,
+			{t_x, t_y, t_z}
+			)
 	};
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
