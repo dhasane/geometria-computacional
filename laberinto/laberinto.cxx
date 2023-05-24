@@ -1,4 +1,5 @@
 #include "LabToMesh.cxx"
+#include "labyrinth.cxx"
 #include "pos.cxx"
 #include "filter.cxx"
 #include "labyrinth_solver.cxx"

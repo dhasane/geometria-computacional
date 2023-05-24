@@ -163,23 +163,17 @@ public:
 				}
 				r->fill();
 
-				Pos next;
-				std::vector<Pos> not_selected;
+				std::vector<Pos> surr = surrounding(current);
 
-                if (select_random_room(current, next, not_selected)) {
-                    potential_rooms.push_front({next, current});
+				if (!surr.empty()) {
+					std::shuffle( std::begin( surr ) , std::end( surr ) , gen );
 
-                    // std::cout << "next: " << next.string_pos() << std::endl;
-                    // std::cout << "not selected: ";
-                    // print_rooms(not_selected);
+                    potential_rooms.push_front({surr.front(), current});
 
-                    for (Pos p: not_selected) {
-                        potential_rooms.push_back({p, current});
-                    }
-                }
-                // for (Pos p: surrounding(current)) {
-                //  potential_rooms.push_back({p, current});
-                // }
+					for (int a = 1; a < surr.size(); a++) {
+						potential_rooms.push_back({surr[a], current});
+					}
+				}
 			}
 		}
 	}
@@ -250,32 +244,6 @@ private:
 		}
 
 		return surr;
-	}
-
-	bool select_random_room(Pos current, Pos &next, std::vector<Pos>& not_selected) {
-		std::vector<Pos> surr = surrounding(current);
-
-		// std::cout << "posibles: " ;
-		// print_rooms(not_selected);
-		// std::cout << std::endl;
-		// no es lo mas eficiente, pero quiero dejar la idea
-
-		if (surr.empty()) {
-			return false;
-		}
-
-		int sel = get_random(surr.size());
-
-		for (int a = 0; a < surr.size(); a ++) {
-			if (a == sel) {
-				next = surr[a];
-			}
-			else {
-				not_selected.push_back(surr[a]);
-			}
-		}
-
-		return true;
 	}
 };
 
