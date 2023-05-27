@@ -13,25 +13,26 @@ int main(int argc, char** argv)
 
 	std::string objpath = argc >= 5 ? argv[4] : "";
 
+	auto of = ObjectFilter(
+			objpath,
+			{t_x, t_y, t_z}
+		);
 	auto l = Labyrinth{
 		t_x, t_y, t_z
 		// , Filter::circle({t_x, t_y, t_z})
-		, Filter::object(
-			objpath,
-			{t_x, t_y, t_z}
-			)
+		, (std::function<bool(Pos)>) &of.inside_object
 	};
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
 
-	CGAL::IO::write_OBJ(
-		"solution.obj",
-		LabSolver::solve(
-			LabToMesh::to_obj(l),
-			LabToMesh::real_pos(l.start),
-			LabToMesh::real_pos(l.end)
-			)
-		);
+	// CGAL::IO::write_OBJ(
+	// 	"solution.obj",
+	// 	LabSolver::solve(
+	// 		LabToMesh::to_obj(l),
+	// 		LabToMesh::real_pos(l.start),
+	// 		LabToMesh::real_pos(l.end)
+	// 		)
+	// 	);
 
     return 0;
 }

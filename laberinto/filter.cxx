@@ -2,6 +2,7 @@
 #define FILTER_DEF
 
 #include "pos.cxx"
+#include <CGAL/IO/STL.h>
 #include <CGAL/enum.h>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/AABB_tree.h>
@@ -33,15 +34,22 @@ struct Filter {
 			return centro.x < centro.distancia(p);
 		};
 	}
+};
 
-	static std::function<bool(Pos)> object(std::string path, Pos size) {
+struct ObjectFilter {
+	Pos bounding_max;
+	Pos bounding_min;
+	Tree tree;
+	Point OUTSIDE_POINT;
+	Point step_size;
+
+	ObjectFilter(std::string path, Pos size) {
 		TMesh m;
-		CGAL::IO::read_polygon_mesh(path, m);
+		// CGAL::IO::read_polygon_mesh(path, m);
+		CGAL::IO::read_STL(path, m);
 
-		// Tree tree = Tree(faces(m).first, faces(m).second, m);
+		Tree tree = Tree(faces(m).first, faces(m).second, m);
 
-		Pos bounding_max{0, 0, 0};
-		Pos bounding_min{0, 0, 0};
 		bool first = true;
 
 		for (TMesh::Vertex_index vi: m.vertices()) {
@@ -75,7 +83,7 @@ struct Filter {
 		float dist_z = sqrt(dist.z * dist.z);
 
 		// un punto que siempre este afuera del bounding box
-		Point OUTSIDE_POINT {
+		OUTSIDE_POINT = {
 			bounding_min.x + dist_x,
 			bounding_min.y - 20,
 			bounding_min.z + dist_z,
@@ -83,36 +91,41 @@ struct Filter {
 
 		std::cout << "OUT: " << OUTSIDE_POINT << std::endl;
 
-		Point step_size{
+		step_size = {
 			dist_x / size.x,
 			dist_y / size.y,
 			dist_z / size.z
 		};
 
 		std::cout << "step: " << step_size << std::endl;
+	}
 
-		return [m, OUTSIDE_POINT, step_size, bounding_min](Pos p) {
-			// std::cout << step_size << std::endl;
-			// TODO: tiene que haber una forma de mover este tree al contexto de la lambda
-			Tree tree = Tree(faces(m).first, faces(m).second, m);
-
-			Point b{
-				bounding_min.x + step_size.x() * p.x,
-				bounding_min.y + step_size.y() * p.y,
-				bounding_min.z + step_size.z() * p.z,
-			};
-			Segment segment_query(OUTSIDE_POINT, b);
-
-			// std::cout << segment_query;
-			int inter = tree.number_of_intersected_primitives(segment_query);
-			bool ret = false;
-			if (inter > 0) {
-				// std::cout << " has " << inter;
-				ret = inter % 2 == 0;
-			}
-			// std::cout << std::endl;
-			return ret;
+	bool inside_object(Pos p) {
+		Point b{
+			bounding_min.x + step_size.x() * p.x,
+			bounding_min.y + step_size.y() * p.y,
+			bounding_min.z + step_size.z() * p.z,
 		};
+		Segment segment_query(OUTSIDE_POINT, b);
+
+		std::cout << p.to_string() << ": " << segment_query;
+		int inter = tree.number_of_intersected_primitives(segment_query);
+		bool ret = false;
+		if (inter > 0) {
+			std::cout << " has " << inter;
+			ret = inter % 2 == 0;
+		}
+		std::cout << std::endl;
+		return ret;
+	}
+
+	std::function<bool(Pos)> object() {
+		return [this](Pos p) {
+			return inside_object(p);
+		};
+	}
+	bool inside(Pos p) {
+		return inside_object(p);
 	}
 };
 
