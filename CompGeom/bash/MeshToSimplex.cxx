@@ -156,20 +156,33 @@ Circ circumsphere(
 	return Circ{ {cs.transpose()}, rs };
 }
 
-PT new_pos(Circ circ, PT pos, PT v1, PT v2, PT v3) {
+TPoint new_pos(Eigen::Matrix<TReal, 3, 3> Rxy,
+		   Eigen::Matrix<TReal, 3, 1> v,
+		   Eigen::Matrix<TReal, 3, 1> v1,
+		   Eigen::Matrix<TReal, 3, 1> v2,
+		   Eigen::Matrix<TReal, 3, 1> v3
+	) {
+
+	Eigen::Matrix<TReal, 3, 1>
+		pv = Rxy * v,
+		pv1 = Rxy * v1,
+		pv2 = Rxy * v2,
+		pv3 = Rxy * v3;
 
 	// TODO: esto se consigue mal
-	vec3 centroid{
-		(v1.x() + v2.x() + v3.x())/3 ,
-		(v1.y() + v2.y() + v3.y())/3 ,
-		(v1.z() + v2.z() + v3.z())/3 ,
+	Eigen::Matrix<TReal, 3, 1> centroid{
+		(pv1.x() + pv2.x() + pv3.x())/3 ,
+		(pv1.y() + pv2.y() + pv3.y())/3 ,
+		(pv1.z() + pv2.z() + pv3.z())/3 ,
 	};
-	std::cout << circ.to_string() << " " << pos.to_string() << " -> " << PT{centroid}.to_string() << std::endl;
-	return PT{centroid};
+	// std::cout << circ.to_string() << " " << pos.to_string() << " -> " << PT{centroid}.to_string() << std::endl;
+	Eigen::Matrix<TReal, 3, 1> ret = Rxy.transpose() * centroid;
+
+	return {ret[0], ret[1], ret[2]};
 }
 
-void prettify_simplex_step(TSimplex &simplex, TReal phi) {
-	std::deque<PT> changes;
+bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
+	std::deque<TPoint> changes;
 	for(
 		TSimplex::Vertex_iterator vIt = simplex.vertices_begin( );
 		vIt != simplex.vertices_end( );
@@ -224,35 +237,39 @@ void prettify_simplex_step(TSimplex &simplex, TReal phi) {
 
 		PT ptF1{Rxy * v};
 
-		PT new_F1 = new_pos(circ,
-							ptF1,
-							{Rxy * v1},
-							{Rxy * v2},
-							{Rxy * v3});
+		TPoint new_F1 = new_pos(Rxy, v, v1, v2, v3);
 
-		std::cout << "[" <<
-			circ.center.to_string() << " " <<
-			sph.center.to_string()  << "]" <<
-			ptF1.to_string() << " -> " << new_F1.to_string()
-				  << std::endl;
+		// std::cout << "[" <<
+		// 	circ.center.to_string() << " " <<
+		// 	sph.center.to_string()  << "]"
+		// 	// << ptF1.to_string() << " -> " << new_F1.to_string()
+		// 		  << std::endl;
 		changes.push_back(new_F1);
 	}
 
+	bool point_movement = false;
 	for(
 		TSimplex::Vertex_iterator vIt = simplex.vertices_begin( );
 		vIt != simplex.vertices_end( );
 		++vIt
 		)
 	{
+		point_movement &= vIt->point() != changes.front();
 		// TPoint pt = vIt->point();
-		vIt->point() = changes.front().to_point();
+		vIt->point() = changes.front();
 		changes.pop_front();
 	}
+	return point_movement;
 }
 
-// void prettify_simplex(TSimplex &simplex, TReal phi) {
-// 	prettify_simplex(simplex, phi);
-// }
+void prettify_simplex(TSimplex &simplex, TReal phi) {
+	int max_loops = 20;
+
+	// TODO: encontrar por que se alarga
+	for (int a = 0 ; a < max_loops; a++) {
+		prettify_simplex_step(simplex, phi);
+	}
+}
 
 // -------------------------------------------------------------------------
 int main( int argc, char** argv )
@@ -263,7 +280,7 @@ int main( int argc, char** argv )
   CGAL::IO::read_STL( argv[ 1 ], mesh );
   build_simplex_mesh( simplex, mesh );
 
-  prettify_simplex_step(simplex, 5);
+  prettify_simplex(simplex, 5);
 
   CGAL::draw( simplex );
 
