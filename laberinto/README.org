@@ -1,43 +1,170 @@
-* Taller Voronoi
-** integrantes
-- Daniel Hamilton-Smith
+* Entrega Final Laberinto
 ** ejecucion
-*** compilar
-crear carpeta build
-#+begin_src sh
-mkdir build
-#+end_src
-
-correr cmake y make
-#+begin_src sh
-cd mkdir ; cmake .. ; make ; cd -
-#+end_src
 *** ejecutar
 el proyecto se ejecuta como
 #+begin_src sh
-./voronoi <numero aristas> <numero iteraciones>
+./laberinto <tamaño x> <tamaño y> <tamaño z> <archivo>
 #+end_src
 
-numero aristas: numero de aristas a agregar al diagrama de voronoi
-numero iteraciones: numero de iteraciones en las que se encontrará el siguiente conjunto de caras adjacentes
+- tamaño x: tamaño en x del laberinto. Default 20
+- tamaño y: tamaño en y del laberinto. Default 20
+- tamaño z: tamaño en z del laberinto. Default 20
+- archivo: Opcional. objeto 3d que será útilizado para construir el laberinto. Esto es experimental y puede que aún no funcione completamente.
 ** algoritmo
-pasos preparación:
-- Se toma la cara con mayor area
-  - Se utiliza green para encontrar esta area
-  - En caso de que una cara contenga el punto infinito, el area es definida como 0
-- Esta cara se agrega a un conjunto de caras CARAS, este representa el total de caras.
-- Adicionalmente se agrega a otro conjunto de caras BORDE, la cual representa las caras que se encuentran en el borde.
+Se tienen en terminos generales 3 pasos principales, estos en terminos muy generales, son:
+- Generar matriz 3d, generar conexion entre cuartos de forma aleatoria.
+- Pasar matriz 3d a cuartos. Cada espacio dentro de la matriz representa un cuarto, en caso de que haya una conexion, representa un tunel.
+- Se toman dos puntos dentro del laberinto de cuartos, se busca el camino mas corto desde el primero hasta el segundo.
 
-pasos algoritmo:
-- Se toman todas las caras que se encuentren en BORDE y se encuentran todas las caras adyacentes de estas.
-  - mientras que estas no se encuentren dentro de CARAS, se agregan a CARAS y a una lista NUEVO_BORDE
-- Al revisar todas las caras dentro de BORDE, BORDE es reemplazado con NUEVO_BORDE
-- Esto se repite n veces.
-  - En caso de no haber agregado elementos a BORDE, significa que la totalidad de las caras en el diagrama de voronoi se encuentran dentro de CARAS. Se puede detener el algoritmo.
+Opcionalmente, se tiene un paso previo a generar la matriz 3d, el cual sirve para generar "filtros" sobre esta. Esto sirve para que el laberinto tome formas distintas a un cuadrado.
+En este momento se tiene en el código un ejemplo de esto, haciendo que el laberinto sea una esfera.
 
-optimizacion:
-- CARAS puede ser una lista de conjuntos. Cada uno de estos conjuntos representa un nivel adicional que se ha agregado al total.
-- Esto ayuda a que no se tenga que revisar la totalidad de las caras, sino que solo se revisen las ultimas dos iteraciones (la actual y la anterior). La actual, que representa el borde (ultimo nivel), solo tendra contacto con el nivel anterior y con el nivel siguiente, el cual contendrá las nuevas caras.
-  - Nuevos elementos se agregan a una lista de nuevas caras unicamente en caso de que: no están en esa misma lista y no se encuentran en las dos iteraciones previas.
-- Además este método permite relacionar entre la cara y la iteracion en la que fue agregada.
+
+*** Matriz
+#+begin_example
+un cuarto representa una posicion (x,y,z) y si ha sido o no recorrido
+
+mat = se construye una matriz de cuartos [tam_x, tam_y, tam_z]
+cuartos_por_recorrer = []  esta lista contiene los posibles cuartos para revisar y desde donde este fue agregado
+
+se inserta un cuarto aleatorio dentro de cuartos_por_recorrer
+
+Mientras cuartos por recorrer no esté vacío
+    Cuarto, Desde = se saca el primer elemento de cuartos_por_recorrer
+
+    en caso de que no se haya recorrido el Cuarto
+        Se marca Cuarto como ya recorrido
+
+        adyacentes = se toman todos los cuartos adyacentes a Cuarto, siempre y cuando no haya sido marcado ya
+
+        se desordena la lista de adyacentes
+
+        se agregan a cuartos_por_recorrer
+        - el primer elemento dentro de adyacentes se agrega de primero a cuartos_por_recorrer, de forma que sea el siguiente
+        - el resto de los elementos dentro de adyacentes se agregan al final de la lista de cuartos por recorrer
+        - se agregan con el formato (adyacente[i], Cuarto)
+    fin condicion
+fin ciclo
+#+end_example
+*** Matriz a Cuartos
+#+begin_example
+se construye una matriz de puntos de [tam_x * 2, tam_y * 2, tam_z * 2]
+    la razon por la que hay el doble de puntos, es porque cada casilla dentro de la matriz en el paso previo necesitará ahora tener 8 puntos. Estos son representantes de cada una de las esquinas de un cuarto en 3d.
+
+
+para cada cuarto dentro de mat (paso previo)
+    Cuarto
+
+    conexiones = se sacan las conexiones que tenga cuarto
+
+    para cada una de las conexiones
+        Conexion
+        se identifica la direccion en la que va Conexion
+    fin ciclo
+
+    se revisan todas las direcciones,
+        si hay conexion, se arma un tubo en esa direccion,
+        si no hay conexion, se arma una pared
+fin ciclo
+#+end_example
+*** Recorrer Cuartos
+Este algoritmo tiene una suposicion importante, en que depende que si sea posible llegar desde el punto inicial pueda llegar al punto final.
+
+#+begin_example
+
+se toman dos puntos
+    entrada = uno representa la entrada del laberinto
+    salida  = el otro representa la salida
+
+primera_cara = se toma la cara adyacente al punto de entrada
+
+caras_faltantes = representa una lista en la que se guarda las proximas posibles caras y la cantidad de pasos que ha tomado llegar a esta
+caras_revisadas = conjunto de caras por las que se ha pasado, además se guarda la cara que se uso para llegar a esta y la cantidad de pasos
+
+se agrega la primera_cara a caras_faltantes
+
+mientras caras_faltantes no este vacío y no se haya encontrado el punto final
+    Cara, pasos = se saca el primer elemento en caras_faltantes
+
+    adyacentes = caras adyacentes a Cara
+
+    para cada Adyacente en adyacentes
+        en caso de que no esté dentro de caras_revisadas
+            se agrega
+        en caso de que si esté en caras_revisadas
+            se revisa si los pasos en el elemento previo es mayor a pasos y si lo es, cambia el elemento previo por el actual
+
+        se revisa cada Punto de Adyacente
+            en caso de que Punto sea igual a salida, cierra el ciclo
+            se guarda la cara de salida
+    fin ciclo adyacentes
+
+fin ciclo
+
+
+Cara = se toma la cara de salida
+solucion
+
+mientras Cara sea diferente de entrada
+    Desde, pasos = caras_revisadas[Cara]
+
+    se agrega la cara Desde a la lista de pasos en solucion
+
+    Cara = Desde
+
+fin ciclo
+
+
+se retorna la solucion
+
+
+#+end_example
+*** paso opcional filtrado
+con el objetivo de que la primera matriz tenga una forma distinta a un cuadrado
+para estos, se le pasa a la matriz una funcion que evalua si cada una de las casillas deberían ser incluidas
+
+en terminos generales, se sigue la siguiente logica
+#+begin_example
+
+se recibe funcion Filtro
+
+para cada Posicion en matriz
+    se evalua Posicion con Filtro
+
+    en caso de que retorne negativo, se marca la Posicion como ya recorrida, lo cual evita que el algoritmo pase por esta mas adelante
+fin ciclo
+#+end_example
+
+lo que se muestra fuera de las definiciones es procesamiento que es necesario hacer antes de la definicion de la funcion.
+
+**** geometrico
+ejemplo de Filtro con una esfera
+#+begin_example
+
+centro = se encuentra el centro de la matriz
+
+def Filtro (Posicion)
+    return centro.x < distancia a la posicion;
+#+end_example
+**** objeto
+este tipo de filtro supone recibir un objeto, y convertirlo en un filtro para la matriz
+#+begin_example
+caja = se encuentra la caja envolvente del objeto
+punto_externo = un punto que se encuentre fuera de la caja
+
+def Filtro(Posicion)
+    linea = se crea una linea entre Posicion y punto_externo
+    intersecciones = 0
+
+    para cada Cara dentro de Objeto
+        se evalua si la linea atraviesa la cara
+            en caso de que atraviese
+                intersecciones += 1
+        fin condicion
+    fin ciclo
+
+    retornar true en caso de que intersecciones sea impar, false en lo contrario
+
+fin definicion
+#+end_example
 
