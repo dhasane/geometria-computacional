@@ -131,7 +131,7 @@ void build_simplex_mesh( _S& simplex, const _M& mesh )
 
 //FUNCIONES MARCO AURELIANO Y CAMPO VECTORIAL:
 //Los puntos de la malla con Marco Aurelio
-void adjust_points_marco_aurelio(TSimplex& simplex, const typename TSimplex::Facet_handle& fh)
+void adjust_points_marco_aurelio( _S& simplex, const typename  _S::Facet_handle& fh)
 {
  
     TPoint& p1 = fh->first->vertex(fh->second)->point();
@@ -148,7 +148,7 @@ void adjust_points_marco_aurelio(TSimplex& simplex, const typename TSimplex::Fac
 }
 
 //Los puntos de la malla con Campo Vectorial
-void adjust_points_campo_vectorial(TSimplex& simplex, const typename TSimplex::Facet_handle& fh)
+void adjust_points_campo_vectorial( _S& simplex, const typename  _S::Facet_handle& fh)
 {
     
     TPoint& p1 = fh->first->vertex(fh->second)->point();
@@ -167,7 +167,7 @@ void adjust_points_campo_vectorial(TSimplex& simplex, const typename TSimplex::F
 }
 
 // Ajustar los puntos de la malla para que sea lo mas equilartero y mantener la geometria/topologia de la esfera
-void adjust_points_and_maintain_sphere(TSimplex& simplex, const typename TSimplex::Facet_handle& fh, const std::string& method)
+void adjust_points_and_maintain_sphere( _S& simplex, const typename  _S::Facet_handle& fh, const std::string& method)
 {
     if (method == "MA")
     {
