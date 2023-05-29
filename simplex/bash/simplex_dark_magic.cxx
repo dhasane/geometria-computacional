@@ -117,3 +117,77 @@ void build_simplex_mesh( _S& simplex, const _M& mesh )
 
   builder.end_surface( );
 }
+
+using TReal = float;
+
+std::pair<Eigen::Matrix< TReal, 3, 1 >, TReal> circumcircle(
+	Eigen::Matrix< TReal, 3, 1 > v1,
+	Eigen::Matrix< TReal, 3, 1 > v2_2d,
+	Eigen::Matrix< TReal, 3, 1 > v3_2d,
+	Eigen::Matrix< TReal, 3, 3 > Rxy
+	) {
+	// Circumcircle
+	Eigen::Matrix< TReal, 3, 3 > a, bx, by;
+	a <<
+		0, 0, 1,
+		v2_2d( 0 ), v2_2d( 1 ), 1,
+		v3_2d( 0 ), v3_2d( 1 ), 1;
+	bx <<
+		0, 0, 1,
+		v2_2d.transpose( ) * v2_2d, v2_2d( 1 ), 1,
+		v3_2d.transpose( ) * v3_2d, v3_2d( 1 ), 1;
+	by <<
+		0, 0, 1,
+		v2_2d.transpose( ) * v2_2d, v2_2d( 0 ), 1,
+		v3_2d.transpose( ) * v3_2d, v3_2d( 0 ), 1;
+
+    Eigen::Matrix< TReal, 3, 1 > cc;
+    cc <<
+		bx.determinant( ) / ( 2 * a.determinant( ) ),
+		by.determinant( ) / ( -2 * a.determinant( ) ),
+		0;
+    TReal rc = ( cc.transpose( ) * cc ).array( ).sqrt( )( 0, 0 );
+    cc = ( Rxy.transpose( ) * cc ) + v1;
+
+    // std::cout << cc.transpose( ) << " : ";
+    // std::cout << rc << std::endl;
+	return {cc.transpose(), rc};
+}
+std::pair<Eigen::Matrix< TReal, 3, 1 >, TReal> circumsphere(
+	Eigen::Matrix< TReal, 3, 1 > v,
+	Eigen::Matrix< TReal, 3, 1 > v1,
+	Eigen::Matrix< TReal, 3, 1 > v2,
+	Eigen::Matrix< TReal, 3, 1 > v3
+	) {
+	Eigen::Matrix< TReal, 4, 4 > A, Dx, Dy, Dz;
+	A <<
+		v.transpose( ), 1,
+		v1.transpose( ), 1,
+		v2.transpose( ), 1,
+		v3.transpose( ), 1;
+	Dx <<
+		v.transpose( ) * v, v( 1 ), v( 2 ), 1,
+		v1.transpose( ) * v1, v1( 1 ), v1( 2 ), 1,
+		v2.transpose( ) * v2, v2( 1 ), v2( 2 ), 1,
+		v3.transpose( ) * v3, v3( 1 ), v3( 2 ), 1;
+	Dy <<
+		v.transpose( ) * v, v( 0 ), v( 2 ), 1,
+		v1.transpose( ) * v1, v1( 0 ), v1( 2 ), 1,
+		v2.transpose( ) * v2, v2( 0 ), v2( 2 ), 1,
+		v3.transpose( ) * v3, v3( 0 ), v3( 2 ), 1;
+	Dz <<
+		v.transpose( ) * v, v( 0 ), v( 1 ), 1,
+		v1.transpose( ) * v1, v1( 0 ), v1( 1 ), 1,
+		v2.transpose( ) * v2, v2( 0 ), v2( 1 ), 1,
+		v3.transpose( ) * v3, v3( 0 ), v3( 1 ), 1;
+
+	Eigen::Matrix< TReal, 3, 1 > cs;
+	cs <<
+		Dx.determinant( ) / ( 2 * A.determinant( ) ),
+		Dy.determinant( ) / ( -2 * A.determinant( ) ),
+		Dz.determinant( ) / ( 2 * A.determinant( ) );
+	TReal rs = ( ( cs - v ).transpose( ) * ( cs - v ) ).array( ).sqrt( )( 0, 0 );
+
+	// std::cout << cs.transpose( ) << " : " << rs << std::endl;
+	return { cs.transpose(), rs };
+}

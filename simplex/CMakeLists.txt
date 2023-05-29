@@ -31,12 +31,12 @@ target_link_libraries(
   CGAL::CGAL_Basic_viewer
   )
 
-add_executable(MarcoAurelio bash/MeshToSimlexMarcoAurelioCampoVec.cxx)
-target_link_libraries(
-  MarcoAurelio
-  Eigen3::Eigen
-  CGAL::CGAL
-  CGAL::CGAL_Basic_viewer
-  )
+# add_executable(MarcoAurelio bash/MeshToSimlexMarcoAurelioCampoVec.cxx)
+# target_link_libraries(
+#   MarcoAurelio
+#   Eigen3::Eigen
+#   CGAL::CGAL
+#   CGAL::CGAL_Basic_viewer
+#   )
 
 ## eof - CMakeLists.txt

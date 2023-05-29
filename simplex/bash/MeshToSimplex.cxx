@@ -29,10 +29,15 @@ using TMesh		= CGAL::Surface_mesh< TPoint >;
 using TSimplex	= CGAL::Polyhedron_3< TKernel >;
 using vec3		= TKernel::Vector_3;
 
+
+
+using epoint = Eigen::Matrix<TReal, 3, 1>;
+
+using Circ = std::pair<epoint, TReal>;
+
 struct PT {
-	// di que algo te confunde sin decir que te confunde
-	Eigen::Matrix<TReal, 3, 1> center;
-	PT(Eigen::Matrix<TReal, 3, 1> center) {
+	epoint center;
+	PT(epoint center) {
 		this->center = center;
 	}
 	PT(vec3 p) {
@@ -62,112 +67,49 @@ struct PT {
 	}
 };
 
-struct Circ {
-	PT center;
-	TReal radius;
-
-	std::string to_string() const {
-		std::ostringstream s;
-		s << "("
-		  << center.x() << ", "
-		  << center.y() << ", "
-		  << center.z() << ": "
-		  << radius << ")";
-		return s.str();
-	}
-};
-
 void get_normal(vec3 &n, vec3 p1, vec3 p2, vec3 p3) {
 	n += CGAL::cross_product( p2, p3 );
 	n += CGAL::cross_product( p3, p1 );
 	n /= std::sqrt( n.squared_length( ) );
 }
 
-Circ circumcircle(
-	Eigen::Matrix< TReal, 3, 1 > v1,
-	Eigen::Matrix< TReal, 3, 1 > v2_2d,
-	Eigen::Matrix< TReal, 3, 1 > v3_2d,
-	Eigen::Matrix< TReal, 3, 3 > Rxy
-	) {
-	// Circumcircle
-	Eigen::Matrix< TReal, 3, 3 > a, bx, by;
-	a <<
-		0, 0, 1,
-		v2_2d( 0 ), v2_2d( 1 ), 1,
-		v3_2d( 0 ), v3_2d( 1 ), 1;
-	bx <<
-		0, 0, 1,
-		v2_2d.transpose( ) * v2_2d, v2_2d( 1 ), 1,
-		v3_2d.transpose( ) * v3_2d, v3_2d( 1 ), 1;
-	by <<
-		0, 0, 1,
-		v2_2d.transpose( ) * v2_2d, v2_2d( 0 ), 1,
-		v3_2d.transpose( ) * v3_2d, v3_2d( 0 ), 1;
+// epoint new_pos(
+// 	Circ circle, Circ sphere,
+// 	Eigen::Matrix<TReal, 3, 3> Rxy, epoint P,
+// 	epoint P1, epoint P2, epoint P3
+// 	) {
+// 	epoint
+// 		F   = Rxy * P;
+//
+// 	float
+// 		e1 = 3,
+// 		e2 = 3,
+// 		e3 = 3;
+//
+// 	epoint F_centroid = circle.first;
+//
+// 	epoint f_tang = F_centroid - F;
+//
+// 	// std::cout << std::endl << ">> "
+// 	// 		  << PT{F}.to_string() << "(" << PT{pv}.to_string() << ")"<< " -> " << PT{F_centroid}.to_string() << " : "
+// 	// 		  << PT{f_tang}.to_string()
+// 	// 		  << std::endl;
+//
+// 	// return Rxy.transpose() * (F_centroid + f_tang);
+// 	return Rxy.transpose() * F_centroid;
+// }
 
-    Eigen::Matrix< TReal, 3, 1 > cc;
-    cc <<
-		bx.determinant( ) / ( 2 * a.determinant( ) ),
-		by.determinant( ) / ( -2 * a.determinant( ) ),
-		0;
-    TReal rc = ( cc.transpose( ) * cc ).array( ).sqrt( )( 0, 0 );
-    cc = ( Rxy.transpose( ) * cc ) + v1;
-
-    // std::cout << cc.transpose( ) << " : ";
-    // std::cout << rc << std::endl;
-	return Circ{{cc.transpose()}, rc};
-}
-
-Circ circumsphere(
-	Eigen::Matrix< TReal, 3, 1 > v,
-	Eigen::Matrix< TReal, 3, 1 > v1,
-	Eigen::Matrix< TReal, 3, 1 > v2,
-	Eigen::Matrix< TReal, 3, 1 > v3
-	) {
-	Eigen::Matrix< TReal, 4, 4 > A, Dx, Dy, Dz;
-	A <<
-		v.transpose( ), 1,
-		v1.transpose( ), 1,
-		v2.transpose( ), 1,
-		v3.transpose( ), 1;
-	Dx <<
-		v.transpose( ) * v, v( 1 ), v( 2 ), 1,
-		v1.transpose( ) * v1, v1( 1 ), v1( 2 ), 1,
-		v2.transpose( ) * v2, v2( 1 ), v2( 2 ), 1,
-		v3.transpose( ) * v3, v3( 1 ), v3( 2 ), 1;
-	Dy <<
-		v.transpose( ) * v, v( 0 ), v( 2 ), 1,
-		v1.transpose( ) * v1, v1( 0 ), v1( 2 ), 1,
-		v2.transpose( ) * v2, v2( 0 ), v2( 2 ), 1,
-		v3.transpose( ) * v3, v3( 0 ), v3( 2 ), 1;
-	Dz <<
-		v.transpose( ) * v, v( 0 ), v( 1 ), 1,
-		v1.transpose( ) * v1, v1( 0 ), v1( 1 ), 1,
-		v2.transpose( ) * v2, v2( 0 ), v2( 1 ), 1,
-		v3.transpose( ) * v3, v3( 0 ), v3( 1 ), 1;
-
-	Eigen::Matrix< TReal, 3, 1 > cs;
-	cs <<
-		Dx.determinant( ) / ( 2 * A.determinant( ) ),
-		Dy.determinant( ) / ( -2 * A.determinant( ) ),
-		Dz.determinant( ) / ( 2 * A.determinant( ) );
-	TReal rs = ( ( cs - v ).transpose( ) * ( cs - v ) ).array( ).sqrt( )( 0, 0 );
-
-	// std::cout << cs.transpose( ) << " : " << rs << std::endl;
-	return Circ{ {cs.transpose()}, rs };
-}
-
-TPoint new_pos(Eigen::Matrix<TReal, 3, 3> Rxy,
-		   Eigen::Matrix<TReal, 3, 1> v,
-		   Eigen::Matrix<TReal, 3, 1> v1,
-		   Eigen::Matrix<TReal, 3, 1> v2,
-		   Eigen::Matrix<TReal, 3, 1> v3
+epoint new_pos(
+	Circ circle, Circ sphere,
+	Eigen::Matrix<TReal, 3, 3> Rxy, epoint P,
+	epoint P1, epoint P2, epoint P3
 	) {
 
 	Eigen::Matrix<TReal, 3, 1>
-		pv = Rxy * v,
-		pv1 = Rxy * v1,
-		pv2 = Rxy * v2,
-		pv3 = Rxy * v3;
+		pv  = Rxy * P,
+		pv1 = Rxy * P1,
+		pv2 = Rxy * P2,
+		pv3 = Rxy * P3;
 
 	// TODO: esto se consigue mal
 	Eigen::Matrix<TReal, 3, 1> centroid{
@@ -178,7 +120,7 @@ TPoint new_pos(Eigen::Matrix<TReal, 3, 3> Rxy,
 	// std::cout << circ.to_string() << " " << pos.to_string() << " -> " << PT{centroid}.to_string() << std::endl;
 	Eigen::Matrix<TReal, 3, 1> ret = Rxy.transpose() * centroid;
 
-	return {ret[0], ret[1], ret[2]};
+	return ret;
 }
 
 bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
@@ -235,16 +177,16 @@ bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
 		// Circumsphere
 		Circ sph = circumsphere(v, v1, v2, v3);
 
-		PT ptF1{Rxy * v};
+		epoint new_F1 = new_pos(circ, sph, Rxy, v, v1, v2, v3);
 
-		TPoint new_F1 = new_pos(Rxy, v, v1, v2, v3);
+		TPoint nF1{new_F1[0], new_F1[1], new_F1[2]};
 
-		// std::cout << "[" <<
-		// 	circ.center.to_string() << " " <<
-		// 	sph.center.to_string()  << "]"
-		// 	// << ptF1.to_string() << " -> " << new_F1.to_string()
-		// 		  << std::endl;
-		changes.push_back(new_F1);
+		std::cout << "[" <<
+			circ.first << " " <<
+			sph.first  << "]"
+			<< h1->vertex()->point() << " -> " << nF1
+				  << std::endl;
+		changes.push_back(nF1);
 	}
 
 	bool point_movement = false;
@@ -262,10 +204,7 @@ bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
 	return point_movement;
 }
 
-void prettify_simplex(TSimplex &simplex, TReal phi) {
-	int max_loops = 20;
-
-	// TODO: encontrar por que se alarga
+void prettify_simplex(TSimplex &simplex, TReal phi, int max_loops = 20) {
 	for (int a = 0 ; a < max_loops; a++) {
 		prettify_simplex_step(simplex, phi);
 	}
@@ -280,7 +219,7 @@ int main( int argc, char** argv )
   CGAL::IO::read_STL( argv[ 1 ], mesh );
   build_simplex_mesh( simplex, mesh );
 
-  prettify_simplex(simplex, 5);
+  prettify_simplex(simplex, 5, 5);
 
   CGAL::draw( simplex );
 
