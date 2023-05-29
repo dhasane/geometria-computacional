@@ -20,6 +20,14 @@
 #include <CGAL/draw_surface_mesh.h>
 
 // -------------------------------------------------------------------------
+// Types
+using TKernel = CGAL::Cartesian< float >;
+using TReal   = TKernel::FT;
+using TPoint  = TKernel::Point_3;
+using TMesh   = CGAL::Surface_mesh< TPoint >;
+using TSimplex = CGAL::Polyhedron_3< TKernel >;
+
+// -------------------------------------------------------------------------
 template< class _M >
 typename CGAL::Kernel_traits< typename _M::Point >::Kernel::Vector_3
 surface_mesh_face_normal( const _M& m, const typename _M::Face_index& f )
@@ -181,13 +189,6 @@ void adjust_points_and_maintain_sphere(TSimplex& simplex, const typename TSimple
     fh->first->vertex(fh->third)->point() = cs_center;
     fh->first->vertex(fh->fourth)->point() = cs_center;
 }
-// -------------------------------------------------------------------------
-// Types
-using TKernel = CGAL::Cartesian< float >;
-using TReal   = TKernel::FT;
-using TPoint  = TKernel::Point_3;
-using TMesh   = CGAL::Surface_mesh< TPoint >;
-using TSimplex = CGAL::Polyhedron_3< TKernel >;
 
 // -------------------------------------------------------------------------
 int main( int argc, char** argv )
