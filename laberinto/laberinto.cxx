@@ -19,7 +19,8 @@ int main(int argc, char** argv)
 				{t_x, t_y, t_z}
 			);
 	} else {
-		filter = Filter::circle({t_x, t_y, t_z});
+		// filter = Filter::piramid({t_x, t_y, t_z});
+		filter = Filter::sphere({t_x, t_y, t_z});
 	}
 
 	Labyrinth l = Labyrinth{t_x, t_y, t_z, filter};

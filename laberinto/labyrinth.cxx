@@ -50,6 +50,7 @@ public:
 		// matrix cuadrada
 		rooms = new Room **[max.x];
 		std::vector<Pos> posible_inicio;
+		std::vector<Pos> posible_final;
 
 		for (int x = 0; x < max.x; ++x) {
 			rooms[x] = new Room *[max.y];
@@ -63,6 +64,9 @@ public:
 					if (z==0 && !rooms[x][y][z].is_filled()) {
 						posible_inicio.push_back({x,y,z});
 					}
+					if (z==max.z-1 && !rooms[x][y][z].is_filled()) {
+						posible_final.push_back({x,y,z});
+					}
 				}
 			}
 		}
@@ -70,9 +74,16 @@ public:
 		// siempre empieza en la capa 0 de z, por lo tanto, termina al llegar a max_z
 
 		// Pos f{get_random(max.x), get_random(max.y), 0};
-		Pos f{posible_inicio[get_random(posible_inicio.size())]};
-		start = f;
-		potential_rooms.push_back({f, OUTSIDE});
+		Pos ini{posible_inicio[get_random(posible_inicio.size())]};
+		start = ini;
+		potential_rooms.push_back({ini, OUTSIDE});
+
+		if (posible_final.empty()) {
+			std::cout << "no se encontro salida" << std::endl;
+		}
+
+		Pos fin{posible_final[get_random(posible_final.size())]};
+		end = fin;
 
 		build();
 	}
@@ -198,30 +209,12 @@ private:
 			0 <= p.z && p.z < max.z;
 	}
 
-	bool fill_room(std::vector<Pos> &surr, Pos from, Pos p) {
-		int x = (p.x);
-		int y = (p.y);
-		int z = (p.z);
-
-		if (0 <= x && x < max.x &&
-			0 <= y && y < max.y
-			)
-		{
-			// ya que llegar a max.z la primera vez es llegar a una "salida"
-			if(0 <= z && z < max.z)
-			{
-				if (!rooms[x][y][z].is_filled()) {
-					surr.push_back(p);
-				}
-			}
-			else if (!complete && z >= max.z) {
-				// para definir la puerta de salida
-				end = from;
-				complete = true;
-				return true;
+	void fill_room(std::vector<Pos> &surr, Pos from, Pos p) {
+		if (verify_internal(p)) {
+			if (!get_room(p)->is_filled()) {
+				surr.push_back(p);
 			}
 		}
-		return false;
 	}
 
 	std::vector<Pos> surrounding(Pos p) {
@@ -232,16 +225,12 @@ private:
 		int z = p.z;
 
 		// en caso de encontrar el final, no quiero que tome en cuenta las casillas alrededor
-		if (fill_room(surr, p, {x + 1, y, z}) ||
-			fill_room(surr, p, {x - 1, y, z}) ||
-			fill_room(surr, p, {x, y + 1, z}) ||
-			fill_room(surr, p, {x, y - 1, z}) ||
-			fill_room(surr, p, {x, y, z + 1}) ||
-			fill_room(surr, p, {x, y, z - 1})) {
-
-			surr.clear();
-			std::cout << "final encontrado " << p.to_string() << std::endl;
-		}
+		fill_room(surr, p, {x + 1, y, z});
+		fill_room(surr, p, {x - 1, y, z});
+		fill_room(surr, p, {x, y + 1, z});
+		fill_room(surr, p, {x, y - 1, z});
+		fill_room(surr, p, {x, y, z + 1});
+		fill_room(surr, p, {x, y, z - 1});
 
 		return surr;
 	}

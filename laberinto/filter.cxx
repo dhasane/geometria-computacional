@@ -27,13 +27,25 @@ using Segment = TKernel::Segment_3;
 
 // todas las funciones aqui deber recibir unicamente un Pos, y retornar un bool
 struct Filter {
-	static std::function<bool(Pos)> circle(Pos max) {
+	static std::function<bool(Pos)> sphere(Pos max) {
 		const Pos centro {max.x/2,max.y/2,max.z/2};
 		return [centro](Pos p) {
 			return centro.x < centro.distancia(p);
 		};
 	}
 
+	static std::function<bool(Pos)> piramid(Pos max) {
+		return [max](Pos p) {
+			std::cout << p.z ;
+			int sep = p.z == 0? 0 : (p.z) /2 ;
+			std::cout << " : " << sep << std::endl;
+			return !(p.x - sep < 0 || max.x < p.x + sep ||
+					 p.y - sep < 0 || max.y < p.y + sep
+				);
+		};
+	}
+
+	// poodria ser buena idea mover esto a su propio objeto
 	static std::function<bool(Pos)> object(std::string path, Pos size) {
 		TMesh m;
 		CGAL::IO::read_polygon_mesh(path, m);
