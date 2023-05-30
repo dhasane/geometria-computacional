@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <cmath>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -34,6 +35,9 @@ using vec3		= TKernel::Vector_3;
 using epoint = Eigen::Matrix<TReal, 3, 1>;
 
 using Circ = std::pair<epoint, TReal>;
+
+const double PI = acos(-1);
+const double PI_h = acos(-1)/2;
 
 struct PT {
 	epoint center;
@@ -73,54 +77,74 @@ void get_normal(vec3 &n, vec3 p1, vec3 p2, vec3 p3) {
 	n /= std::sqrt( n.squared_length( ) );
 }
 
-// epoint new_pos(
-// 	Circ circle, Circ sphere,
-// 	Eigen::Matrix<TReal, 3, 3> Rxy, epoint P,
-// 	epoint P1, epoint P2, epoint P3
-// 	) {
-// 	epoint
-// 		F   = Rxy * P;
-//
-// 	float
-// 		e1 = 3,
-// 		e2 = 3,
-// 		e3 = 3;
-//
-// 	epoint F_centroid = circle.first;
-//
-// 	epoint f_tang = F_centroid - F;
-//
-// 	// std::cout << std::endl << ">> "
-// 	// 		  << PT{F}.to_string() << "(" << PT{pv}.to_string() << ")"<< " -> " << PT{F_centroid}.to_string() << " : "
-// 	// 		  << PT{f_tang}.to_string()
-// 	// 		  << std::endl;
-//
-// 	// return Rxy.transpose() * (F_centroid + f_tang);
-// 	return Rxy.transpose() * F_centroid;
-// }
+std::string epoint_str(epoint e) {
+	std::ostringstream s;
+	s << e[0] << ", " << e[1] << ", " << e[2];
+	return s.str();
+}
+
+double L(TReal r, float d, float phi) {
+	std::cout << " pi es " << PI << std::endl;
+
+	double e = phi < PI_h ? 1 : -1;
+
+	double r_q = (r * r);
+	double d_q = (d * d);
+	double tanphi_q = std::tan(phi);
+	double up = r_q - d_q * tanphi_q ;
+	double down = e * sqrt(r_q + (r_q - d_q)*(tanphi_q*tanphi_q) + r);
+
+	return up / down;
+};
+
+float distancia(epoint &e1, epoint &e2) {
+	epoint dist{e1[0] - e2[0], e1[1] - e2[1], e1[2] - e2[2]};
+	return sqrt(dist[0] * dist[0] +
+				dist[1] * dist[1] +
+				dist[2] * dist[2]);
+}
 
 epoint new_pos(
-	Circ circle, Circ sphere,
 	Eigen::Matrix<TReal, 3, 3> Rxy, epoint P,
-	epoint P1, epoint P2, epoint P3
+	epoint Pn1, epoint Pn2, epoint Pn3,
+	epoint normal,
+	float phi = 40.0,
+	float alpha = 0.5,
+	float beta = 0.5,
+	float y_chistosa = 0.5
 	) {
 
-	Eigen::Matrix<TReal, 3, 1>
-		pv  = Rxy * P,
-		pv1 = Rxy * P1,
-		pv2 = Rxy * P2,
-		pv3 = Rxy * P3;
+	// Eigen::Matrix<TReal, 3, 1>
+	// 	v2_2d = Rxy * (Pn2 - Pn1),
+	// 	v3_2d = Rxy * (Pn3 - Pn1);
 
-	// TODO: esto se consigue mal
-	Eigen::Matrix<TReal, 3, 1> centroid{
-		(pv1.x() + pv2.x() + pv3.x())/3 ,
-		(pv1.y() + pv2.y() + pv3.y())/3 ,
-		(pv1.z() + pv2.z() + pv3.z())/3 ,
-	};
-	// std::cout << circ.to_string() << " " << pos.to_string() << " -> " << PT{centroid}.to_string() << std::endl;
-	Eigen::Matrix<TReal, 3, 1> ret = Rxy.transpose() * centroid;
+	// // Circumcircle
+	// Circ circle = circumcircle(Pn1, v2_2d, v3_2d, Rxy);
 
-	return ret;
+	// // Circumsphere
+	// Circ sphere = circumsphere(P, Pn1, Pn2, Pn3);
+
+	// epoint
+	// 	F   = Rxy * P;
+
+	// epoint f_tang = circle.first - F;
+
+	// float r = circle.second;
+	// float d = distancia(F, circle.first);
+	// epoint f_norm = (L(r, d, phi)) * normal;
+
+	// epoint F_int = f_tang + f_norm;
+
+
+	// epoint F_ext = {};
+
+	// epoint n_Pi = (P + (1 - y_chistosa) * (P) + alpha * F_int + beta * F_ext);
+
+
+	// return n_Pi;
+
+	// Esto logra lo mismo que se tenia antes
+	return circle.first;
 }
 
 bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
@@ -147,8 +171,8 @@ bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
 
 		// Transformation to XY plane
 		Eigen::Matrix<TReal, 3, 3> Rxy;
-		Eigen::Matrix<TReal, 3, 1> v, v1, v2, v3, v2_2d, v3_2d;
-		v << p[0], p[1], p[2];
+		Eigen::Matrix<TReal, 3, 1> v, v1, v2, v3;
+		v  << p[0] , p[1] , p[2];
 		v1 << p1[0], p1[1], p1[2];
 		v2 << p2[0], p2[1], p2[2];
 		v3 << p3[0], p3[1], p3[2];
@@ -168,25 +192,8 @@ bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
 		Rxy(1, 2) = -u1 * st;
 		Rxy(2, 1) = u1 * st;
 
-		v2_2d = Rxy * (v2 - v1);
-		v3_2d = Rxy * (v3 - v1);
-
-		// Circumcircle
-		Circ circ = circumcircle(v1, v2_2d, v3_2d, Rxy);
-
-		// Circumsphere
-		Circ sph = circumsphere(v, v1, v2, v3);
-
-		epoint new_F1 = new_pos(circ, sph, Rxy, v, v1, v2, v3);
-
-		TPoint nF1{new_F1[0], new_F1[1], new_F1[2]};
-
-		std::cout << "[" <<
-			circ.first << " " <<
-			sph.first  << "]"
-			<< h1->vertex()->point() << " -> " << nF1
-				  << std::endl;
-		changes.push_back(nF1);
+		epoint new_F1 = new_pos(Rxy, v, v1, v2, v3, {n[0], n[1], n[2]});
+		changes.push_back({new_F1[0], new_F1[1], new_F1[2]});
 	}
 
 	bool point_movement = false;
@@ -204,9 +211,12 @@ bool prettify_simplex_step(TSimplex &simplex, TReal phi) {
 	return point_movement;
 }
 
-void prettify_simplex(TSimplex &simplex, TReal phi, int max_loops = 20) {
+void prettify_simplex(TSimplex &simplex, TReal phi, int max_loops = 20, bool print = false) {
 	for (int a = 0 ; a < max_loops; a++) {
 		prettify_simplex_step(simplex, phi);
+		if (print)
+			CGAL::draw( simplex );
+
 	}
 }
 
@@ -216,10 +226,12 @@ int main( int argc, char** argv )
   TMesh mesh;
   TSimplex simplex;
 
+  int reps = argc >= 3 ? std::atoi(argv[2]) : 5;
+
   CGAL::IO::read_STL( argv[ 1 ], mesh );
   build_simplex_mesh( simplex, mesh );
 
-  prettify_simplex(simplex, 5, 5);
+  prettify_simplex(simplex, 5, reps, true);
 
   CGAL::draw( simplex );
 
