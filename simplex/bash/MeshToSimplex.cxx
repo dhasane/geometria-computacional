@@ -114,12 +114,12 @@ epoint new_pos(
 	float y_chistosa = 0.5
 	) {
 
-	// Eigen::Matrix<TReal, 3, 1>
-	// 	v2_2d = Rxy * (Pn2 - Pn1),
-	// 	v3_2d = Rxy * (Pn3 - Pn1);
+	Eigen::Matrix<TReal, 3, 1>
+		v2_2d = Rxy * (Pn2 - Pn1),
+		v3_2d = Rxy * (Pn3 - Pn1);
 
 	// // Circumcircle
-	// Circ circle = circumcircle(Pn1, v2_2d, v3_2d, Rxy);
+	Circ circle = circumcircle(Pn1, v2_2d, v3_2d, Rxy);
 
 	// // Circumsphere
 	// Circ sphere = circumsphere(P, Pn1, Pn2, Pn3);
