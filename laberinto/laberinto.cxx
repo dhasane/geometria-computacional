@@ -11,16 +11,18 @@ int main(int argc, char** argv)
     int t_y = argc >= 3 ? std::atoi(argv[2]) : 20;
     int t_z = argc >= 4 ? std::atoi(argv[3]) : 20;
 
-	std::string objpath = argc >= 5 ? argv[4] : "";
+	std::function<bool(Pos)> filter;
+	if (argc >= 5) {
+		std::string objpath = argv[4] ;
+		filter = Filter::object(
+				objpath,
+				{t_x, t_y, t_z}
+			);
+	} else {
+		filter = Filter::circle({t_x, t_y, t_z});
+	}
 
-	auto l = Labyrinth{
-		t_x, t_y, t_z
-		// , Filter::circle({t_x, t_y, t_z})
-		, Filter::object(
-			objpath,
-			{t_x, t_y, t_z}
-			)
-	};
+	Labyrinth l = Labyrinth{t_x, t_y, t_z, filter};
 
 	CGAL::IO::write_OBJ( "mesh.obj", LabToMesh::to_obj(l) );
 
