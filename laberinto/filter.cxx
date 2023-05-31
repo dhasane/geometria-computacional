@@ -39,8 +39,8 @@ struct Filter {
 			std::cout << p.z ;
 			int sep = p.z == 0? 0 : (p.z) /2 ;
 			std::cout << " : " << sep << std::endl;
-			return !(p.x - sep < 0 || max.x < p.x + sep ||
-					 p.y - sep < 0 || max.y < p.y + sep
+			return (p.x - sep <= 0 || max.x < p.x + sep ||
+					p.y - sep <= 0 || max.y < p.y + sep
 				);
 		};
 	}
